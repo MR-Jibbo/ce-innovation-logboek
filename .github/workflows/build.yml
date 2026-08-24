@@ -1,0 +1,120 @@
+name: Build & Release
+
+# Runs on every push of a version tag (e.g. v1.0.0, v1.0.1, ...).
+# Builds a macOS .dmg and a Windows .exe installer and attaches both
+# to a GitHub Release for that tag.
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  # Allows a manual run from the Actions tab (no release is published then,
+  # only the installers are uploaded as build artifacts you can download).
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            dist-script: dist:mac
+            artifact-glob: "dist/*.dmg"
+          - os: windows-latest
+            dist-script: dist:win
+            artifact-glob: "dist/*.exe"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run type-check
+
+      - name: Build installer (${{ matrix.os }})
+        run: npm run ${{ matrix.dist-script }}
+        env:
+          # electron-builder auto-detects GITHUB_TOKEN for publishing, but we
+          # publish manually below via softprops/action-gh-release instead, so
+          # explicitly opt it out of publishing on its own.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.os }}
+          path: ${{ matrix.artifact-glob }}
+          if-no-files-found: error
+
+      # macOS-only: because the app isn't signed with a paid Apple Developer
+      # certificate, opening the .dmg-installed app directly can show a
+      # confusing (false) "is damaged" Gatekeeper message. A double-click
+      # installer script (installer/Installeer.command) sidesteps this for
+      # non-technical users — see README.md for details.
+      - name: Build double-click installer zip (macOS only)
+        if: matrix.os == 'macos-latest'
+        run: |
+          set -e
+          mkdir -p dist/zips
+          for appdir in dist/mac*/; do
+            app_path=$(find "$appdir" -maxdepth 1 -name "*.app")
+            if [ -z "$app_path" ]; then
+              echo "Geen .app gevonden in $appdir, overslaan."
+              continue
+            fi
+            if [[ "$appdir" == *arm64* ]]; then
+              label="Apple Silicon"
+            else
+              label="Intel"
+            fi
+            stage_name="CE-Innovation Logboek Installer ($label)"
+            stage_dir="dist/zips/$stage_name"
+            rm -rf "$stage_dir"
+            mkdir -p "$stage_dir"
+            ditto "$app_path" "$stage_dir/$(basename "$app_path")"
+            cp installer/Installeer.command "$stage_dir/"
+            chmod +x "$stage_dir/Installeer.command"
+            (cd dist/zips && zip -r -y -q "${stage_name}.zip" "$stage_name")
+          done
+          ls -la dist/zips
+
+      - name: Upload double-click installer zips
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-zip-macos-latest
+          path: dist/zips/*.zip
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all installers
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release with installers
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/installer-macos-latest/*.dmg
+            artifacts/installer-zip-macos-latest/*.zip
+            artifacts/installer-windows-latest/*.exe
+          generate_release_notes: true
