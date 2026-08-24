@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Content-Security-Policy is set from the main process instead of a meta
+      tag here (see main/index.ts). A meta-tag CSP with 'self' behaves
+      unreliably once the app is loaded via a file:// URL (packaged build),
+      which can silently block the app's own scripts/styles and result in a
+      blank window — setting the header on the response instead works the
+      same in dev (http://) and in the packaged app (file://).
+    -->
+    <title>CE-Innovation Logboek</title>
+    <script>
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        document.documentElement.classList.add("dark");
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./renderer/main/index.tsx"></script>
+  </body>
+</html>
