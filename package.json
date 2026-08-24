@@ -15,9 +15,9 @@
     "build": "npm run build:renderer && npm run build:main && npm run build:preload",
     "type-check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p main/tsconfig.json",
     "start": "npm run build && electron .",
-    "dist:mac": "npm run build && electron-builder --mac",
-    "dist:win": "npm run build && electron-builder --win",
-    "dist": "npm run build && electron-builder --mac --win"
+"dist:mac": "npm run build && electron-builder --mac --publish=never",
+"dist:win": "npm run build && electron-builder --win --publish=never",
+"dist": "npm run build && electron-builder --mac --win --publish=never"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.87.4",
