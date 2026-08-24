@@ -4,7 +4,7 @@
  * Register all IPC handlers here
  */
 
-import { ipcMain, dialog } from "electron";
+import { ipcMain, dialog, shell } from "electron";
 
 import { appHandlers } from "./app.js";
 import { logbookStore, type LogbookData } from "../services/logbook-store.js";
@@ -72,5 +72,16 @@ export function registerHandlers(): void {
   // ─── Native dialog passthrough (used by preload's dialog.* bridge) ───────
   ipcMain.handle("dialog:showSaveDialog", async (_event, options) => {
     return await dialog.showSaveDialog(options);
+  });
+
+  // Opens a URL in the user's default browser (never inside the app window).
+  // Only allows http(s) links — guards against a malicious/malformed URL
+  // reaching shell.openExternal with an unexpected protocol.
+  ipcMain.handle("app:openExternal", async (_event, url: string) => {
+    if (!/^https?:\/\//i.test(url)) {
+      throw new Error("Alleen http(s)-links mogen extern geopend worden.");
+    }
+    await shell.openExternal(url);
+    return { success: true };
   });
 }

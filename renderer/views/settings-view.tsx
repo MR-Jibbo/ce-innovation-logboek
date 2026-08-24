@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
 import { pk } from "../lib/use-logbook";
 import type { VisibleProjects } from "../lib/types";
@@ -63,6 +63,11 @@ export function SettingsView() {
     } finally {
       setChangingFolder(false);
     }
+  };
+
+  const openStudioBeeftink = (e: MouseEvent) => {
+    e.preventDefault();
+    window.glazeAPI.glaze.ipc.invoke("app:openExternal", "https://studiobeeftink.nl");
   };
 
   return (
@@ -185,6 +190,18 @@ export function SettingsView() {
           "Alles opslaan"
         )}
       </button>
+
+      <p style={{ marginTop: "32px", fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>
+        Better think{" "}
+        <a
+          href="https://studiobeeftink.nl"
+          onClick={openStudioBeeftink}
+          style={{ color: "inherit", textDecoration: "underline", cursor: "pointer" }}
+        >
+          Studio Beeftink
+        </a>
+        !
+      </p>
     </div>
   );
 }

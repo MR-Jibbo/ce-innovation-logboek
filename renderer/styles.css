@@ -310,9 +310,17 @@ body {
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  /* Lets the user drag the window by clicking anywhere on the topbar,
+     like a native app's title bar. Interactive children (buttons, the
+     export dropdown) opt back out below so they stay clickable. */
+  -webkit-app-region: drag;
 }
 .topbar-title { font-weight: var(--fw-bold); font-size: var(--fs-md); color: var(--text-primary); }
-.topbar-actions { display: flex; gap: 8px; align-items: center; }
+.topbar-actions { display: flex; gap: 8px; align-items: center; -webkit-app-region: no-drag; }
+
+/* Also usable standalone (e.g. the loading screen, which has no topbar yet)
+   as `<div className="drag-region">` to create a draggable strip. */
+.drag-region { -webkit-app-region: drag; }
 
 /* ── Export dropdown ── */
 .export-dropdown {

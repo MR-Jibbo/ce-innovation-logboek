@@ -10,6 +10,7 @@ import { SettingsView as AppSettingsView } from "../views/settings-view";
 import { ProjectSettingsView } from "../views/project-settings-view";
 import { ModalRenderer } from "../views/modal-renderer";
 import { AppIcon } from "../components/AppIcon";
+import studioBeeftinkLogo from "../assets/studio-beeftink-logo.png";
 import type { LogbookContext } from "../lib/use-logbook";
 
 export function HomeView() {
@@ -17,9 +18,16 @@ export function HomeView() {
 
   if (!logbook.loaded) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="h-full flex flex-col items-center justify-center" style={{ gap: "18px" }}>
         <div className="drag-region fixed top-0 left-0 right-0 h-13" />
-        <p className="text-secondary" style={{ fontSize: "var(--fs-base)" }}>Laden…</p>
+        <img
+          src={studioBeeftinkLogo}
+          alt=""
+          style={{ width: "56px", height: "auto", opacity: 0.9 }}
+        />
+        <p className="text-secondary" style={{ fontSize: "var(--fs-base)" }}>
+          Een Studio Beeftink product
+        </p>
       </div>
     );
   }
