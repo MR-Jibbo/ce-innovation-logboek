@@ -12,7 +12,7 @@ export const PROJ_COLORS = [
 
 export const STATUS: StatusDef[] = [
   { key: "not_started", label: "Idee", cls: "chip-idea" },
-  { key: "in_progress", label: "Beezig", cls: "chip-busy" },
+  { key: "in_progress", label: "Bezig", cls: "chip-busy" },
 ];
 
 export const LUK_DEFS: LukDef[] = [
