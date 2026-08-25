@@ -60,15 +60,21 @@
   --danger: #e5484d;
   --danger-hover: #d63a3f;
 
-  /* ── Typography ── */
+  /* ── Typography ──
+     --fs-scale is a user-adjustable multiplier (Instellingen → Lettergrootte,
+     see renderer/lib/font-size.ts) applied to every --fs-* token below, so
+     the whole app's text scales from one slider. Elements that should stay
+     a fixed size regardless (e.g. the splash screen) use literal px values
+     instead of these tokens. */
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-  --fs-xs: 11px;
-  --fs-sm: 12px;
-  --fs-base: 13px;
-  --fs-md: 15px;
-  --fs-lg: 17px;
-  --fs-xl: 22px;
-  --fs-2xl: 28px;
+  --fs-scale: 1;
+  --fs-xs: calc(11px * var(--fs-scale));
+  --fs-sm: calc(12px * var(--fs-scale));
+  --fs-base: calc(13px * var(--fs-scale));
+  --fs-md: calc(15px * var(--fs-scale));
+  --fs-lg: calc(17px * var(--fs-scale));
+  --fs-xl: calc(22px * var(--fs-scale));
+  --fs-2xl: calc(28px * var(--fs-scale));
   --fw-regular: 400;
   --fw-medium: 500;
   --fw-semibold: 600;
@@ -1074,9 +1080,11 @@ textarea.input { resize: vertical; line-height: 1.5; }
 .splash-name { animation: splash-zoom-in 350ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 .splash-stage.splash-exit { animation: splash-zoom-out 350ms ease-in both; }
 
+/* Fixed px, deliberately NOT var(--fs-*) — the splash screen stays the same
+   size regardless of the Instellingen → Lettergrootte setting. */
 .splash-tagline {
   font-family: "Courier New", Courier, monospace;
-  font-size: var(--fs-base);
+  font-size: 16px;
   color: var(--text-secondary);
 }
 .splash-tagline .accent { color: #ff6b4a; }
@@ -1084,7 +1092,7 @@ textarea.input { resize: vertical; line-height: 1.5; }
 .splash-appname {
   font-family: "Courier New", Courier, monospace;
   font-weight: var(--fw-bold);
-  font-size: 28px;
+  font-size: 34px;
   color: var(--text-primary);
   letter-spacing: -0.01em;
 }

@@ -22,6 +22,7 @@ export function ProjectsView() {
                 const pe = state.entries.filter((e: Entry) => e.periode === nm);
                 const pl = state.lukEntries.filter((e: LukEntry) => e.periode === nm);
                 const onboarded = state.projOnboarded[nm];
+                const completed = state.completedProjects.includes(nm);
                 return (
                   <div
                     key={idx}
@@ -33,9 +34,11 @@ export function ProjectsView() {
                         <span className="dot" style={{ width: "10px", height: "10px", background: PROJ_COLORS[idx % PROJ_COLORS.length] }} />
                         <span style={{ fontWeight: "var(--fw-bold)", fontSize: "var(--fs-md)" }}>{nm}</span>
                       </div>
-                      {!onboarded && (
+                      {completed ? (
+                        <span className="chip chip-green" style={{ fontSize: "var(--fs-xs)" }}>Afgerond</span>
+                      ) : !onboarded ? (
                         <span className="chip chip-gray" style={{ fontSize: "var(--fs-xs)" }}>Nog niet gestart</span>
-                      )}
+                      ) : null}
                     </div>
                     <div className="flex-center" style={{ gap: "16px", fontSize: "var(--fs-sm)", color: "var(--text-secondary)" }}>
                       {idx < 5 && <span>{pe.length} ontwikkelmomenten</span>}

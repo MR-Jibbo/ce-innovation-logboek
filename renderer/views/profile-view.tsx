@@ -4,6 +4,7 @@ import { pk } from "../lib/use-logbook";
 import type { VisibleProjects } from "../lib/types";
 import { AppIcon } from "../components/AppIcon";
 import { getThemePreference, setThemePreference, type ThemePreference } from "../lib/theme";
+import { getFontScale, setFontScale, FONT_SCALE_MIN, FONT_SCALE_MAX, FONT_SCALE_STEP, FONT_SCALE_DEFAULT } from "../lib/font-size";
 
 export function ProfileView() {
   const ctx = useLogbookCtx();
@@ -17,6 +18,7 @@ export function ProfileView() {
   const [changingFolder, setChangingFolder] = useState(false);
   const [folderMoved, setFolderMoved] = useState(false);
   const [theme, setTheme] = useState<ThemePreference>(getThemePreference());
+  const [fontScale, setFontScaleState] = useState<number>(getFontScale());
 
   const THEME_OPTIONS: { key: ThemePreference; label: string }[] = [
     { key: "light", label: "Licht" },
@@ -27,6 +29,11 @@ export function ProfileView() {
   const handleThemeChange = (pref: ThemePreference) => {
     setTheme(pref);
     setThemePreference(pref);
+  };
+
+  const handleFontScaleChange = (scale: number) => {
+    setFontScaleState(scale);
+    setFontScale(scale);
   };
 
   const defaultVP = {
@@ -236,6 +243,41 @@ export function ProfileView() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Lettergrootte */}
+      <div className="card" style={{ marginBottom: "18px" }}>
+        <h2 style={{ fontSize: "var(--fs-md)", fontWeight: "var(--fw-bold)", marginBottom: "4px" }}>
+          Lettergrootte
+        </h2>
+        <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-tertiary)", marginBottom: "14px" }}>
+          Pas de tekstgrootte in de hele app aan voor een betere leesbaarheid.
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "12px", color: "var(--text-tertiary)", flexShrink: 0 }}>A</span>
+          <input
+            type="range"
+            min={FONT_SCALE_MIN}
+            max={FONT_SCALE_MAX}
+            step={FONT_SCALE_STEP}
+            value={fontScale}
+            style={{ flex: 1 }}
+            onChange={(e) => handleFontScaleChange(Number(e.target.value))}
+          />
+          <span style={{ fontSize: "19px", color: "var(--text-tertiary)", flexShrink: 0 }}>A</span>
+          <span style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", minWidth: "40px", textAlign: "right", flexShrink: 0 }}>
+            {Math.round(fontScale * 100)}%
+          </span>
+        </div>
+        {fontScale !== FONT_SCALE_DEFAULT && (
+          <button
+            className="btn-ghost"
+            style={{ marginTop: "12px", fontSize: "var(--fs-xs)", padding: "6px 10px" }}
+            onClick={() => handleFontScaleChange(FONT_SCALE_DEFAULT)}
+          >
+            Standaard herstellen
+          </button>
+        )}
       </div>
 
       {/* Disclaimer */}

@@ -754,6 +754,7 @@ function CompleteProjectModal({ projectKey, onClose }: { projectKey: string; onC
           width: "100%",
           boxSizing: "border-box",
           textAlign: "left",
+          whiteSpace: "normal",
           marginBottom: "10px",
           padding: "12px 14px",
         }}

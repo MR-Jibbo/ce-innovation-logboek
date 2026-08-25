@@ -118,9 +118,6 @@ export function DashboardView() {
               <div className="card">
                 {recentEntries.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "20px 10px" }}>
-                    <div style={{ color: "var(--text-faint)", marginBottom: "8px" }}>
-                      <AppIcon name="file-text" size="lg" />
-                    </div>
                     <p style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-semibold)", marginBottom: "4px" }}>
                       Nog geen recente activiteiten
                     </p>
@@ -163,14 +160,11 @@ export function DashboardView() {
               <div className="card">
                 {upcomingDeadlines.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "20px 10px" }}>
-                    <div style={{ color: "var(--text-faint)", marginBottom: "8px" }}>
-                      <AppIcon name="planning" size="lg" />
-                    </div>
                     <p style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-semibold)", marginBottom: "4px" }}>
                       Geen aankomende deadlines
                     </p>
                     <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>
-                      Je bent helemaal bij! 🎉
+                      Je bent helemaal bij!
                     </p>
                   </div>
                 ) : (
