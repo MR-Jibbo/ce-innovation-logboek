@@ -7,6 +7,7 @@ import {
   FolderOpen,
   Check,
   ChevronRight,
+  ChevronLeft,
   ChevronDown,
   FileText,
   X,
@@ -36,6 +37,7 @@ export type IconName =
   | "folder"
   | "check"
   | "chevron-right"
+  | "chevron-left"
   | "chevron-down"
   | "file-text"
   | "x"
@@ -61,6 +63,7 @@ const components = {
   folder: FolderOpen,
   check: Check,
   "chevron-right": ChevronRight,
+  "chevron-left": ChevronLeft,
   "chevron-down": ChevronDown,
   "file-text": FileText,
   x: X,

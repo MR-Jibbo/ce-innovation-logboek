@@ -43,9 +43,6 @@ export function ReflectieView() {
 
   return (
     <div className="animate-fade-in">
-      <h1 className="page-title">Reflectie</h1>
-      <p className="page-subtitle">Een kort journaal om regelmatig terug te blikken op je ontwikkeling.</p>
-
       <div className="card" style={{ marginBottom: "24px" }}>
         <div className="flex-between" style={{ marginBottom: "10px" }}>
           <h2 style={{ fontSize: "var(--fs-md)", fontWeight: "var(--fw-bold)" }}>

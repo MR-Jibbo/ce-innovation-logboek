@@ -43,6 +43,14 @@ export function ModalRenderer() {
       size = "sm";
       box = <ConfirmModal msg={modal.msg} onOk={modal.onOk} onClose={close} />;
       break;
+    case "skillIndicators":
+      size = "md";
+      box = <SkillIndicatorsModal skillId={modal.skillId} onClose={close} />;
+      break;
+    case "completeProject":
+      size = "sm";
+      box = <CompleteProjectModal projectKey={modal.key} onClose={close} />;
+      break;
     default:
       return null;
   }
@@ -677,6 +685,89 @@ function LukEntryFormModal({ lukId, criterionId, periode, editId, onClose }: {
       </p>
       <button className="btn btn-primary" style={{ width: "100%" }} onClick={handleSave}>
         {existing ? "Opslaan" : "Toevoegen"}
+      </button>
+    </>
+  );
+}
+
+// ─── Skill Indicators Modal (skills-overzicht — niet projectgebonden) ───────────
+function SkillIndicatorsModal({ skillId, onClose }: { skillId: string; onClose: () => void }) {
+  const skill = ALL_SKILLS.find((s) => s.id === skillId);
+  if (!skill) return null;
+
+  return (
+    <>
+      <div className="flex-between" style={{ marginBottom: "18px" }}>
+        <div className="dot-row" style={{ gap: "10px" }}>
+          <span className="dot" style={{ width: "14px", height: "14px", background: skill.color }} />
+          <h2 style={{ fontSize: "var(--fs-lg)", fontWeight: "var(--fw-bold)", margin: "0" }}>{skill.name}</h2>
+        </div>
+        <button className="modal-close" onClick={onClose}>
+          <AppIcon name="x" size="md" />
+        </button>
+      </div>
+      <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", marginBottom: "16px", lineHeight: "1.6" }}>{skill.desc}</p>
+      <p className="slabel">Indicatoren ({skill.ind.length})</p>
+      <div className="subtle-box">
+        {skill.ind.map((ind, i) => (
+          <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", padding: "5px 0", borderBottom: "1px solid var(--border-faint)" }}>
+            <span style={{ color: skill.color, flexShrink: 0, fontSize: "var(--fs-xs)", marginTop: "3px" }}>●</span>
+            <span style={{ fontSize: "var(--fs-sm)", color: "var(--text-primary)", lineHeight: "1.5" }}>{ind}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ─── Complete Project Modal ──────────────────────────────────────────────────────
+function CompleteProjectModal({ projectKey, onClose }: { projectKey: string; onClose: () => void }) {
+  const ctx = useLogbookCtx();
+
+  const handleKeep = () => {
+    ctx.completeProject(projectKey);
+    onClose();
+  };
+
+  const handleReset = () => {
+    ctx.setModal({
+      type: "confirm",
+      msg: `Weet je zeker dat je "${projectKey}" wilt resetten? Alle ontwikkelmomenten, bewijsstukken en instellingen van dit project worden verwijderd en het project gaat terug naar "nog niet gestart".`,
+      onOk: () => { ctx.resetProject(projectKey); ctx.setModal(null); },
+    });
+  };
+
+  return (
+    <>
+      <ModalHeader title={`"${projectKey}" afronden`} onClose={onClose} />
+      <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", marginBottom: "18px", lineHeight: "1.6" }}>
+        Wat wil je doen met de gegevens van dit project?
+      </p>
+      <button
+        className="btn btn-primary"
+        style={{ width: "100%", justifyContent: "flex-start", marginBottom: "10px", padding: "12px 14px" }}
+        onClick={handleKeep}
+      >
+        <AppIcon name="check" size="sm" strokeWidth={2.5} />
+        <span style={{ marginLeft: "8px", textAlign: "left", flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block", fontWeight: "var(--fw-bold)" }}>Alles laten staan</span>
+          <span style={{ display: "block", fontSize: "var(--fs-xs)", fontWeight: "var(--fw-regular)", opacity: 0.85 }}>
+            Het project verschijnt bij "Afgeronde projecten", alle gegevens blijven bewaard.
+          </span>
+        </span>
+      </button>
+      <button
+        className="btn-ghost"
+        style={{ width: "100%", justifyContent: "flex-start", padding: "12px 14px", color: "var(--danger)" }}
+        onClick={handleReset}
+      >
+        <AppIcon name="trash" size="sm" />
+        <span style={{ marginLeft: "8px", textAlign: "left", flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block", fontWeight: "var(--fw-bold)" }}>Project resetten</span>
+          <span style={{ display: "block", fontSize: "var(--fs-xs)", fontWeight: "var(--fw-regular)", opacity: 0.85 }}>
+            Alle ontwikkelmomenten en bewijsstukken worden verwijderd, het project gaat terug naar "nog niet gestart".
+          </span>
+        </span>
       </button>
     </>
   );

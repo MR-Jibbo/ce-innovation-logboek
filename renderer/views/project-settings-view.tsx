@@ -27,8 +27,6 @@ export function ProjectSettingsView() {
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: "680px" }}>
-      <h1 className="page-title" style={{ marginBottom: "20px" }}>Projectinstellingen</h1>
-
       {/* Project name */}
       <div className="card" style={{ marginBottom: "18px" }}>
         <h2 style={{ fontSize: "var(--fs-md)", fontWeight: "var(--fw-bold)", marginBottom: "10px" }}>Projectnaam</h2>

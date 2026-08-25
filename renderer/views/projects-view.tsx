@@ -10,9 +10,6 @@ export function ProjectsView() {
 
   return (
     <div className="animate-fade-in">
-      <h1 className="page-title">Projecten</h1>
-      <p className="page-subtitle">Al je projecten van Jaar 1 en Jaar 2 op een rij.</p>
-
       {YEAR_GROUPS.map((yr) => {
         const indices = (vp[yr.id] || []) as number[];
         if (indices.length === 0) return null;
@@ -54,7 +51,7 @@ export function ProjectsView() {
 
       {(vp.jaar1?.length || 0) === 0 && (vp.jaar2?.length || 0) === 0 && (
         <div className="card" style={{ color: "var(--text-tertiary)", textAlign: "center", padding: "36px" }}>
-          Geen projecten geselecteerd. Pas dit aan via Instellingen.
+          Geen projecten geselecteerd. Pas dit aan via je Profiel.
         </div>
       )}
     </div>

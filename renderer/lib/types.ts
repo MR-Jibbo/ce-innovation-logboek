@@ -4,7 +4,6 @@ export type ViewName =
   | "setup"
   | "home"
   | "project"
-  | "settings"
   | "proj-settings"
   | "projects"
   | "moments"
@@ -109,6 +108,11 @@ export interface Reflection {
   text: string;
 }
 
+export interface ProfilePhotoPosition {
+  x: number; // 0-100, used as object-position X
+  y: number; // 0-100, used as object-position Y
+}
+
 export interface AppState {
   view: ViewName;
   projIdx: number;
@@ -117,6 +121,7 @@ export interface AppState {
   visibleProjects: VisibleProjects | null;
   projNames: string[];
   projOnboarded: Record<string, boolean>;
+  completedProjects: string[];
   selectedSkillIds: Record<string, string[]>;
   lukSelections: Record<string, string[]>;
   skillData: Record<string, Record<string, SkillDataItem>>;
@@ -126,14 +131,17 @@ export interface AppState {
   deadlines: Deadline[];
   reflections: Reflection[];
   profilePhoto: string | null;
+  profilePhotoPosition: ProfilePhotoPosition;
 }
 
 export type ModalState =
   | { type: "skillDetail"; skillId: string }
+  | { type: "skillIndicators"; skillId: string }
   | { type: "entryDetail"; entryId: string }
   | { type: "entryForm"; skillId?: string; periode?: string; editId?: string }
   | { type: "lukCritDetail"; lukId: string; criterionId: string; periode: string }
   | { type: "lukDetail"; entryId: string }
   | { type: "lukEntryForm"; lukId: string; criterionId: string; periode: string; editId?: string }
+  | { type: "completeProject"; key: string }
   | { type: "confirm"; msg: string; onOk: () => void }
   | null;

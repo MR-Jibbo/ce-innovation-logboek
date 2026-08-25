@@ -9,6 +9,7 @@ import type {
   OpenYears,
   Deadline,
   Reflection,
+  ProfilePhotoPosition,
 } from "./types";
 import { DEFAULT_PROJ_NAMES, YEAR_GROUPS, uid } from "./constants";
 
@@ -19,6 +20,7 @@ interface BackendData {
   studieJaar: number;
   visibleProjects: { jaar1: number[]; jaar2: number[] } | null;
   projOnboarded: Record<string, boolean>;
+  completedProjects?: string[];
   selectedSkillIds: Record<string, string[]>;
   lukSelections: Record<string, string[]>;
   skillData: Record<string, Record<string, { plan?: string; tips?: string[] }>>;
@@ -28,6 +30,7 @@ interface BackendData {
   deadlines?: Deadline[];
   reflections?: Reflection[];
   profilePhoto?: string | null;
+  profilePhotoPosition?: ProfilePhotoPosition;
 }
 
 const DEFAULT_STATE: AppState = {
@@ -38,6 +41,7 @@ const DEFAULT_STATE: AppState = {
   visibleProjects: null,
   projNames: [...DEFAULT_PROJ_NAMES],
   projOnboarded: {},
+  completedProjects: [],
   selectedSkillIds: {},
   lukSelections: {},
   skillData: {},
@@ -47,6 +51,7 @@ const DEFAULT_STATE: AppState = {
   deadlines: [],
   reflections: [],
   profilePhoto: null,
+  profilePhotoPosition: { x: 50, y: 50 },
 };
 
 export function useLogbook() {
@@ -81,6 +86,7 @@ export function useLogbook() {
           visibleProjects: data.visibleProjects,
           projNames: data.projNames?.length ? data.projNames : [...DEFAULT_PROJ_NAMES],
           projOnboarded: data.projOnboarded || {},
+          completedProjects: data.completedProjects || [],
           selectedSkillIds: data.selectedSkillIds || {},
           lukSelections: data.lukSelections || {},
           skillData: data.skillData || {},
@@ -90,6 +96,7 @@ export function useLogbook() {
           deadlines: data.deadlines || [],
           reflections: data.reflections || [],
           profilePhoto: data.profilePhoto || null,
+          profilePhotoPosition: data.profilePhotoPosition || { x: 50, y: 50 },
         });
         setSetupStep("profile");
       } catch (e) {
@@ -131,6 +138,7 @@ export function useLogbook() {
         studieJaar: newState.studieJaar,
         visibleProjects: newState.visibleProjects,
         projOnboarded: newState.projOnboarded,
+        completedProjects: newState.completedProjects,
         selectedSkillIds: newState.selectedSkillIds,
         lukSelections: newState.lukSelections,
         skillData: newState.skillData,
@@ -140,6 +148,7 @@ export function useLogbook() {
         deadlines: newState.deadlines,
         reflections: newState.reflections,
         profilePhoto: newState.profilePhoto,
+        profilePhotoPosition: newState.profilePhotoPosition,
       };
       try {
         await window.glazeAPI.glaze.ipc.invoke("logbook:save", backendData);
@@ -355,6 +364,52 @@ export function useLogbook() {
     update((prev) => ({ ...prev, profilePhoto: dataUrl }));
   }, [update]);
 
+  const setProfilePhotoPosition = useCallback((pos: { x: number; y: number }) => {
+    update((prev) => ({ ...prev, profilePhotoPosition: pos }));
+  }, [update]);
+
+  // ─── Project afronden ──────────────────────────────────────────────────────
+  /** Marks a project as completed, keeping all its data exactly as-is. */
+  const completeProject = useCallback((key: string) => {
+    update((prev) => ({
+      ...prev,
+      completedProjects: prev.completedProjects.includes(key)
+        ? prev.completedProjects
+        : [...prev.completedProjects, key],
+    }));
+  }, [update]);
+
+  /** Moves a completed project back to "Gestarte projecten". */
+  const reopenProject = useCallback((key: string) => {
+    update((prev) => ({
+      ...prev,
+      completedProjects: prev.completedProjects.filter((k) => k !== key),
+    }));
+  }, [update]);
+
+  /**
+   * Wipes a project's data (ontwikkelmomenten, bewijsstukken, ontwikkelplan,
+   * skill-/LUK-keuzes) and puts it back to "nog niet gestart" — used as the
+   * alternative to "alles laten staan" when afronden a project.
+   */
+  const resetProject = useCallback((key: string) => {
+    update((prev) => {
+      const next = { ...prev };
+      next.completedProjects = next.completedProjects.filter((k) => k !== key);
+      next.projOnboarded = { ...next.projOnboarded };
+      delete next.projOnboarded[key];
+      next.selectedSkillIds = { ...next.selectedSkillIds };
+      delete next.selectedSkillIds[key];
+      next.lukSelections = { ...next.lukSelections };
+      delete next.lukSelections[key];
+      next.skillData = { ...next.skillData };
+      delete next.skillData[key];
+      next.entries = next.entries.filter((e) => e.periode !== key);
+      next.lukEntries = next.lukEntries.filter((e) => e.periode !== key);
+      return next;
+    });
+  }, [update]);
+
   // ─── Sidebar year toggle ──────────────────────────────────────────────────
   const toggleYear = useCallback((yearId: "jaar1" | "jaar2") => {
     update((prev) => {
@@ -427,6 +482,10 @@ export function useLogbook() {
     updateReflection,
     deleteReflection,
     setProfilePhoto,
+    setProfilePhotoPosition,
+    completeProject,
+    reopenProject,
+    resetProject,
     toggleYear,
     exportPdf,
     exportWord,
@@ -443,6 +502,29 @@ export type LogbookContext = ReturnType<typeof useLogbook>;
 // Helper functions
 export function pk(projNames: string[], i: number): string {
   return projNames[i] || `Project ${i + 1}`;
+}
+
+/** Which studiejaar a project slot (by its index in projNames) belongs to. */
+export function yearOfIndex(i: number): 1 | 2 {
+  return i < 5 ? 1 : 2;
+}
+
+/** Days until an ISO date (negative if in the past, 0 if today). */
+export function daysUntil(dateStr: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr + "T00:00:00");
+  return Math.round((target.getTime() - today.getTime()) / 86400000);
+}
+
+/** Human-readable "over X dagen" / "vandaag" / "X dagen geleden" label. */
+export function daysUntilLabel(dateStr: string): string {
+  const d = daysUntil(dateStr);
+  if (d === 0) return "vandaag";
+  if (d === 1) return "morgen";
+  if (d === -1) return "gisteren";
+  if (d > 1) return `over ${d} dagen`;
+  return `${Math.abs(d)} dagen geleden`;
 }
 
 export function getGreeting(name: string): string {

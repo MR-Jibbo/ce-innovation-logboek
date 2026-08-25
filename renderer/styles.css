@@ -774,6 +774,10 @@ textarea.input { resize: vertical; line-height: 1.5; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 14px; }
 .grid-4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 14px; }
 .grid-fixed-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.grid-fixed-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+@media (max-width: 900px) {
+  .grid-fixed-3 { grid-template-columns: 1fr; }
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Onboarding cards
@@ -812,6 +816,7 @@ textarea.input { resize: vertical; line-height: 1.5; }
 }
 .setup-logo { text-align: center; margin-bottom: 26px; }
 .setup-logo h1 { font-size: var(--fs-2xl); font-weight: var(--fw-heavy); color: var(--text-primary); }
+.setup-logo h1 .accent { color: var(--pink); }
 .setup-logo p { font-size: var(--fs-sm); color: var(--pink); font-weight: var(--fw-bold); letter-spacing: var(--tracking-wider); margin-top: 4px; }
 
 /* ═══════════════════════════════════════════════════════════════════════════

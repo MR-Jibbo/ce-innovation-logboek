@@ -12,12 +12,13 @@ export function SkillsOverviewView() {
 
   return (
     <div className="animate-fade-in">
-      <h1 className="page-title">Skills</h1>
-      <p className="page-subtitle">Ontwikkelmomenten per skill, over al je projecten heen.</p>
-
       <div className="grid-3">
         {withCounts.map(({ sk, count }) => (
-          <div key={sk.id} className="card-sm">
+          <div
+            key={sk.id}
+            className="card-sm clickable-card"
+            onClick={() => ctx.setModal({ type: "skillIndicators", skillId: sk.id })}
+          >
             <div className="dot-row" style={{ gap: "7px", marginBottom: "8px" }}>
               <span className="dot" style={{ width: "8px", height: "8px", background: sk.color }} />
               <span style={{ fontWeight: "var(--fw-semibold)", fontSize: "var(--fs-sm)" }}>{sk.name}</span>

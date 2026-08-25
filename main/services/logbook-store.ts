@@ -8,6 +8,7 @@ export interface LogbookData {
   studieJaar: number;
   visibleProjects: { jaar1: number[]; jaar2: number[] } | null;
   projOnboarded: Record<string, boolean>;
+  completedProjects?: string[];
   selectedSkillIds: Record<string, string[]>;
   lukSelections: Record<string, string[]>;
   skillData: Record<string, Record<string, { plan?: string; tips?: string[] }>>;
@@ -34,6 +35,7 @@ export interface LogbookData {
   deadlines?: Array<{ id: string; title: string; date: string; projectKey?: string }>;
   reflections?: Array<{ id: string; date: string; text: string }>;
   profilePhoto?: string | null;
+  profilePhotoPosition?: { x: number; y: number };
 }
 
 const DEFAULT_DATA: LogbookData = {
@@ -45,6 +47,7 @@ const DEFAULT_DATA: LogbookData = {
   studieJaar: 1,
   visibleProjects: null,
   projOnboarded: {},
+  completedProjects: [],
   selectedSkillIds: {},
   lukSelections: {},
   skillData: {},
@@ -54,6 +57,7 @@ const DEFAULT_DATA: LogbookData = {
   deadlines: [],
   reflections: [],
   profilePhoto: null,
+  profilePhotoPosition: { x: 50, y: 50 },
 };
 
 const DATA_FILE_NAME = "logbook-data.json";

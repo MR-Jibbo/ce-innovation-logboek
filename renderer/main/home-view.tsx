@@ -6,7 +6,6 @@ import { SetupView } from "../views/setup-view";
 import { DashboardView } from "../views/dashboard-view";
 import { ProjectView } from "../views/project-view";
 import { OnboardingView } from "../views/onboarding-view";
-import { SettingsView as AppSettingsView } from "../views/settings-view";
 import { ProjectSettingsView } from "../views/project-settings-view";
 import { ProjectsView } from "../views/projects-view";
 import { MomentsView } from "../views/moments-view";
@@ -29,7 +28,6 @@ const NAV_ITEMS: Array<{ view: ViewName; label: string; icon: IconName }> = [
   { view: "skills", label: "Skills", icon: "skills" },
   { view: "planning", label: "Planning", icon: "planning" },
   { view: "reflectie", label: "Reflectie", icon: "reflect" },
-  { view: "settings", label: "Instellingen", icon: "settings" },
 ];
 
 // Startup splash: a calm fade-in of the logo + tagline, a shared "inzoom"
@@ -42,12 +40,12 @@ type SplashStage = "brand" | "brand-exit" | "name" | "name-exit";
 
 // Keep these in sync with the animation durations in styles.css
 // (splash-fade-in / splash-zoom-out / splash-zoom-in). Total run time is
-// ~3s: 500 (fade-in) + 150 (hold) + 350 (zoom-out) + 350 (zoom-in) + 1300
-// (hold name) + 350 (zoom-out) = 3000ms.
+// ~4.7s: 500 (fade-in) + 1200 (hold brand) + 350 (zoom-out) + 350 (zoom-in) + 2000
+// (hold name) + 350 (zoom-out) = 4750ms.
 const SPLASH_FADE_IN_MS = 500; // duration of the brand's own fade-in
-const SPLASH_HOLD_BRAND_MS = 150; // extra pause once fully visible, before zooming out
+const SPLASH_HOLD_BRAND_MS = 1200; // extra pause once fully visible, before zooming out — logo + tagline readable
 const SPLASH_TRANSITION_MS = 350; // shared zoom-out/zoom-in duration
-const SPLASH_HOLD_NAME_MS = 1300; // "Innovation Logboek" stays on screen
+const SPLASH_HOLD_NAME_MS = 2000; // "Innovation Logboek" stays on screen — readable
 
 function SplashScreen({ onDone }: { onDone: () => void }) {
   const [stage, setStage] = useState<SplashStage>("brand");
@@ -116,8 +114,7 @@ export function HomeView() {
 
   const { state } = logbook;
   let topbarTitle = "Dashboard";
-  if (state.view === "settings") topbarTitle = "Instellingen";
-  else if (state.view === "proj-settings") topbarTitle = `Projectinstellingen — ${logbook.cur()}`;
+  if (state.view === "proj-settings") topbarTitle = `Projectinstellingen — ${logbook.cur()}`;
   else if (state.view === "project") topbarTitle = logbook.cur();
   else if (state.view === "projects") topbarTitle = "Projecten";
   else if (state.view === "moments") topbarTitle = "Ontwikkelmomenten";
@@ -175,7 +172,12 @@ export function HomeView() {
               onClick={() => logbook.navigate("profile")}
             >
               {state.profilePhoto ? (
-                <img src={state.profilePhoto} alt="" className="sb-profile-avatar" />
+                <img
+                  src={state.profilePhoto}
+                  alt=""
+                  className="sb-profile-avatar"
+                  style={{ objectPosition: `${state.profilePhotoPosition.x}% ${state.profilePhotoPosition.y}%` }}
+                />
               ) : (
                 <div className="sb-profile-avatar sb-profile-avatar-fallback">
                   <AppIcon name="user" size="sm" />
@@ -194,7 +196,22 @@ export function HomeView() {
         <div className="main">
           {/* Topbar */}
           <div className="topbar">
-            <div className="topbar-title">{topbarTitle}</div>
+            <div className="topbar-title" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              {(state.view === "project" || state.view === "proj-settings") && (
+                <button
+                  className="btn-icon"
+                  style={{ marginLeft: "-6px" }}
+                  onClick={() => logbook.navigate("projects")}
+                  title="Terug naar Projecten"
+                >
+                  <AppIcon name="chevron-left" size="sm" strokeWidth={2} />
+                </button>
+              )}
+              {topbarTitle}
+              {state.view === "project" && state.completedProjects.includes(logbook.cur()) && (
+                <span className="chip chip-gray" style={{ fontSize: "var(--fs-xs)" }}>Afgerond</span>
+              )}
+            </div>
             <div className="topbar-actions">
               {showProjectActions && (
                 <>
@@ -206,6 +223,24 @@ export function HomeView() {
                     <AppIcon name="settings" size="xs" />
                     Projectinstellingen
                   </button>
+                  {state.completedProjects.includes(logbook.cur()) ? (
+                    <button
+                      className="btn btn-ghost"
+                      style={{ fontSize: "var(--fs-sm)", padding: "6px 12px" }}
+                      onClick={() => logbook.reopenProject(logbook.cur())}
+                    >
+                      Heropenen
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-ghost"
+                      style={{ fontSize: "var(--fs-sm)", padding: "6px 12px" }}
+                      onClick={() => logbook.setModal({ type: "completeProject", key: logbook.cur() })}
+                    >
+                      <AppIcon name="check" size="xs" strokeWidth={2.5} />
+                      Afronden
+                    </button>
+                  )}
                   <ExportMenu logbook={logbook} />
                 </>
               )}
@@ -230,7 +265,6 @@ function MainContent() {
   const { state } = ctx;
 
   if (state.view === "home") return <DashboardView />;
-  if (state.view === "settings") return <AppSettingsView />;
   if (state.view === "proj-settings") return <ProjectSettingsView />;
   if (state.view === "project") {
     const key = ctx.cur();

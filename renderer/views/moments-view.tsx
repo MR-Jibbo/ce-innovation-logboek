@@ -11,9 +11,6 @@ export function MomentsView() {
 
   return (
     <div className="animate-fade-in">
-      <h1 className="page-title">Ontwikkelmomenten</h1>
-      <p className="page-subtitle">Alle ontwikkelmomenten, over al je projecten heen ({sorted.length}).</p>
-
       {sorted.length === 0 ? (
         <div className="card" style={{ color: "var(--text-tertiary)", textAlign: "center", padding: "36px" }}>
           Nog geen ontwikkelmomenten gedocumenteerd. Voeg er een toe vanuit een project.

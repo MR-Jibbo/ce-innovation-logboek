@@ -58,9 +58,9 @@ git push origin v1.0.0
 
 Ga daarna naar je repository op GitHub → tabblad **Actions**. Je ziet daar een workflow draaien ("Build & Release"), dit duurt meestal 5–10 minuten. Als hij klaar is (groen vinkje), ga naar het tabblad **Releases** (rechts op de hoofdpagina van je repo, of via `github.com/MR-Jibbo/ce-innovation-logboek/releases`) — daar staat een nieuwe release met deze downloadbare bestanden: drie installers, bewust niet meer, om het simpel te houden, plus twee korte PDF's:
 
-- **`CE-Innovation Logboek 2.0.0 (Apple Silicon).dmg`** → voor nieuwere Macs (vanaf eind 2020, met een M1/M2/M3/M4-chip — de meeste studenten).
-- `CE-Innovation Logboek 2.0.0 (Intel).dmg` → voor oudere Intel-Macs.
-- `CE-Innovation Logboek Setup 2.0.0.exe` → voor Windows-gebruikers.
+- **`CE-Innovation Logboek 2.1.0 (Apple Silicon).dmg`** → voor nieuwere Macs (vanaf eind 2020, met een M1/M2/M3/M4-chip — de meeste studenten).
+- `CE-Innovation Logboek 2.1.0 (Intel).dmg` → voor oudere Intel-Macs.
+- `CE-Innovation Logboek Setup 2.1.0.exe` → voor Windows-gebruikers.
 - `LEES DIT VOOR INSTALLEREN.pdf` → korte installatiehandleiding (dezelfde drie stappen als hieronder, om door te sturen).
 - `Onepager.pdf` → één pagina over de app zelf: wat hij doet en voor wie.
 
@@ -105,7 +105,7 @@ Documenten-map, of een gesynchroniseerde cloudmap zoals OneDrive/Google Drive/iC
 Drive). Al je projecten, ontwikkelmomenten en bewijsstukken worden daar opgeslagen in
 één bestand: `logbook-data.json`.
 
-- Je kunt deze map later altijd wijzigen via **Instellingen → Opslaglocatie**. Je
+- Je kunt deze map later altijd wijzigen via **Profiel → Opslaglocatie**. Je
   bestaande data wordt dan automatisch meeverhuisd naar de nieuwe map.
 - Als de gekozen map bij het opstarten niet meer bereikbaar is (bijv. een externe schijf
   die niet is aangesloten, of een cloudmap die nog niet gesynchroniseerd is), toont de

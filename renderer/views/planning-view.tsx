@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
-import { pk } from "../lib/use-logbook";
+import { pk, yearOfIndex, daysUntilLabel } from "../lib/use-logbook";
 import { AppIcon } from "../components/AppIcon";
 import type { Deadline } from "../lib/types";
 
@@ -18,7 +18,7 @@ export function PlanningView() {
   const [titleError, setTitleError] = useState(false);
 
   const vp = state.visibleProjects || { jaar1: [], jaar2: [] };
-  const projectOptions = [...(vp.jaar1 || []), ...(vp.jaar2 || [])].map((i) => pk(state.projNames, i));
+  const projectOptions = [...(vp.jaar1 || []), ...(vp.jaar2 || [])].map((i) => ({ idx: i, name: pk(state.projNames, i) }));
 
   const handleAdd = () => {
     if (!title.trim()) { setTitleError(true); return; }
@@ -34,9 +34,6 @@ export function PlanningView() {
 
   return (
     <div className="animate-fade-in">
-      <h1 className="page-title">Planning</h1>
-      <p className="page-subtitle">Houd hier je deadlines bij — ze verschijnen ook op je dashboard.</p>
-
       <div className="card" style={{ marginBottom: "24px" }}>
         <h2 style={{ fontSize: "var(--fs-md)", fontWeight: "var(--fw-bold)", marginBottom: "12px" }}>
           Nieuwe deadline
@@ -65,8 +62,8 @@ export function PlanningView() {
             onChange={(e) => setProjectKey(e.target.value)}
           >
             <option value="">Geen specifiek project</option>
-            {projectOptions.map((nm) => (
-              <option key={nm} value={nm}>{nm}</option>
+            {projectOptions.map(({ idx, name }) => (
+              <option key={name} value={name}>{name} (Jaar {yearOfIndex(idx)})</option>
             ))}
           </select>
           <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={handleAdd}>
@@ -121,6 +118,8 @@ function DeadlineRow({ deadline, onDelete, muted }: { deadline: Deadline; onDele
           </div>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>
             {deadline.date}{deadline.projectKey ? ` · ${deadline.projectKey}` : ""}
+            {" · "}
+            <span style={{ color: "var(--pink)", fontWeight: "var(--fw-semibold)" }}>{daysUntilLabel(deadline.date)}</span>
           </div>
         </div>
       </div>

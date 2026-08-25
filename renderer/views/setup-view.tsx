@@ -42,8 +42,7 @@ function LocationStep() {
     <div className="setup-page">
       <div className="setup-card">
         <div className="setup-logo">
-          <h1>CE_Innovation</h1>
-          <p>LOGBOEK</p>
+          <h1><span className="accent">Innovation</span> Logboek</h1>
         </div>
 
         <p className="field-label" style={{ marginBottom: "6px" }}>Waar wil je je logboekgegevens opslaan?</p>
@@ -106,8 +105,7 @@ function ProfileStep() {
       <div className="setup-card">
         {/* Logo */}
         <div className="setup-logo">
-          <h1>CE_Innovation</h1>
-          <p>LOGBOEK</p>
+          <h1><span className="accent">Innovation</span> Logboek</h1>
         </div>
 
         {ctx.dataFolder && (
