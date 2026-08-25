@@ -113,9 +113,16 @@
   --dur-slow: 280ms;
 }
 
-/* ── Dark mode (follows system) ── */
-@media (prefers-color-scheme: dark) {
-  :root {
+/* ── Dark mode ──
+   Applied via the `.dark` class on <html>, which renderer/lib/theme.ts
+   toggles based on the user's Licht/Donker/Systeem preference (and which
+   main-window.html's inline script also sets synchronously before first
+   paint, to avoid a flash of the wrong theme). Using a class instead of
+   `@media (prefers-color-scheme: dark)` directly means an explicit Licht/
+   Donker choice always wins over the OS setting; "Systeem" mode gets the
+   same effect because theme.ts computes the class from matchMedia itself
+   and keeps it in sync with a change listener. */
+:root.dark {
     --bg: #1c1c1e;
     --surface: #2a2a2e;
     --surface-subtle: #242427;
@@ -146,7 +153,6 @@
     --stat-purple: #a78bfa;
     --stat-blue: #38bdf8;
     --stat-green: #4ade80;
-  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -294,6 +300,89 @@ body {
   background: var(--sidebar-active-bg);
   color: #fff;
   font-weight: var(--fw-semibold);
+}
+
+/* Tip van vandaag — sits above the profile card at the bottom of the sidebar. */
+.sb-tip {
+  background: var(--sidebar-hover);
+  border-radius: var(--r-md);
+  padding: 12px 13px;
+  margin-bottom: 10px;
+}
+.sb-tip-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  color: var(--pink);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: 6px;
+}
+.sb-tip-text {
+  font-size: var(--fs-xs);
+  color: var(--sidebar-text);
+  line-height: 1.5;
+}
+
+/* Profile card at the very bottom of the sidebar. */
+.sb-profile-card {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--sidebar-text);
+  padding: 8px 10px;
+  border-radius: var(--r-xs);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  transition: all var(--dur-fast) var(--ease-out);
+  font-family: inherit;
+}
+.sb-profile-card:hover { background: var(--sidebar-hover); }
+.sb-profile-card.active { background: var(--sidebar-active-bg); }
+
+.sb-profile-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.sb-profile-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text-muted);
+}
+.sb-profile-info { flex: 1; min-width: 0; text-align: left; }
+.sb-profile-name {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--sidebar-text-hover);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb-profile-role { font-size: var(--fs-xs); color: var(--sidebar-text-muted); }
+
+/* Larger avatar, used on the Profiel page itself. */
+.profile-avatar-lg {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.profile-avatar-lg-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-subtle);
+  color: var(--text-tertiary);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -858,3 +947,61 @@ textarea.input { resize: vertical; line-height: 1.5; }
 .flex-between { display: flex; align-items: center; justify-content: space-between; }
 .flex-center { display: flex; align-items: center; gap: 8px; }
 .subtle-box { background: var(--surface-subtle); border-radius: var(--r-sm); padding: 10px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Splash screen (startup animation)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes splash-fade-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+/* The shared "inzoom" transition: the current frame pushes forward and
+   dissolves, making way for the next one. Used both times the splash
+   advances (brand -> app name, app name -> dashboard). */
+@keyframes splash-zoom-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.4); }
+}
+@keyframes splash-zoom-in {
+  from { opacity: 0; transform: scale(0.3); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.splash-screen {
+  /* height:100% would need every ancestor up to html/body to also have an
+     explicit height, which isn't the case here (only .app sets 100vh) — use
+     100vh directly so this is reliably centered regardless of what wraps it. */
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.splash-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+.splash-brand { animation: splash-fade-in 500ms var(--ease-out) both; }
+.splash-name { animation: splash-zoom-in 350ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.splash-stage.splash-exit { animation: splash-zoom-out 350ms ease-in both; }
+
+.splash-tagline {
+  font-family: "Courier New", Courier, monospace;
+  font-size: var(--fs-base);
+  color: var(--text-secondary);
+}
+.splash-tagline .accent { color: #ff6b4a; }
+
+.splash-appname {
+  font-family: "Courier New", Courier, monospace;
+  font-weight: var(--fw-bold);
+  font-size: 28px;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+/* HAN rood, uit de officiële huisstijl-kleurkaart. */
+.splash-appname .accent { color: #e50056; }

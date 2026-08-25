@@ -13,12 +13,21 @@ import {
   Plus,
   Download,
   AlertTriangle,
+  LayoutDashboard,
+  LayoutGrid,
+  Activity,
+  Layers,
+  CalendarDays,
+  NotebookPen,
+  User,
+  Camera,
+  Sparkles,
   type LucideProps,
 } from "lucide-react";
 
 const sizes = { xs: 14, sm: 15, md: 16, lg: 18, xl: 20 } as const;
 
-type IconName =
+export type IconName =
   | "settings"
   | "pencil"
   | "trash"
@@ -32,7 +41,16 @@ type IconName =
   | "x"
   | "plus"
   | "download"
-  | "alert";
+  | "alert"
+  | "dashboard"
+  | "projects"
+  | "moments"
+  | "skills"
+  | "planning"
+  | "reflect"
+  | "user"
+  | "camera"
+  | "tip";
 
 const components = {
   settings: Settings,
@@ -49,6 +67,15 @@ const components = {
   plus: Plus,
   download: Download,
   alert: AlertTriangle,
+  dashboard: LayoutDashboard,
+  projects: LayoutGrid,
+  moments: Activity,
+  skills: Layers,
+  planning: CalendarDays,
+  reflect: NotebookPen,
+  user: User,
+  camera: Camera,
+  tip: Sparkles,
 } as const;
 
 export function AppIcon({

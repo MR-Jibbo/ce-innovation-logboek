@@ -13,9 +13,21 @@
     -->
     <title>CE-Innovation Logboek</title>
     <script>
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        document.documentElement.classList.add("dark");
-      }
+      // Applies the saved theme preference (Licht/Donker/Systeem, see
+      // renderer/lib/theme.ts) synchronously, before first paint, so there's
+      // no flash of the wrong theme. Falls back to the OS preference if
+      // nothing was chosen yet, or if localStorage is unavailable here.
+      (function () {
+        try {
+          var pref = localStorage.getItem("theme-preference") || "system";
+          var isDark = pref === "dark" || (pref !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (isDark) document.documentElement.classList.add("dark");
+        } catch (e) {
+          if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            document.documentElement.classList.add("dark");
+          }
+        }
+      })();
     </script>
   </head>
   <body>

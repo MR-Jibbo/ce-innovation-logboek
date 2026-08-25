@@ -1,35 +1,109 @@
 import { useState, useRef, useEffect } from "react";
 import { LogbookCtx, useLogbookCtx } from "../lib/logbook-context";
 import { useLogbook } from "../lib/use-logbook";
-import { YEAR_GROUPS, PROJ_COLORS } from "../lib/constants";
+import { tipOfTheDay } from "../lib/constants";
 import { SetupView } from "../views/setup-view";
 import { DashboardView } from "../views/dashboard-view";
 import { ProjectView } from "../views/project-view";
 import { OnboardingView } from "../views/onboarding-view";
 import { SettingsView as AppSettingsView } from "../views/settings-view";
 import { ProjectSettingsView } from "../views/project-settings-view";
+import { ProjectsView } from "../views/projects-view";
+import { MomentsView } from "../views/moments-view";
+import { BewijsstukkenView } from "../views/bewijsstukken-view";
+import { SkillsOverviewView } from "../views/skills-overview-view";
+import { PlanningView } from "../views/planning-view";
+import { ReflectieView } from "../views/reflectie-view";
+import { ProfileView } from "../views/profile-view";
 import { ModalRenderer } from "../views/modal-renderer";
-import { AppIcon } from "../components/AppIcon";
+import { AppIcon, type IconName } from "../components/AppIcon";
 import studioBeeftinkLogo from "../assets/studio-beeftink-logo.png";
 import type { LogbookContext } from "../lib/use-logbook";
+import type { ViewName } from "../lib/types";
+
+const NAV_ITEMS: Array<{ view: ViewName; label: string; icon: IconName }> = [
+  { view: "home", label: "Dashboard", icon: "dashboard" },
+  { view: "projects", label: "Projecten", icon: "projects" },
+  { view: "moments", label: "Ontwikkelmomenten", icon: "moments" },
+  { view: "bewijsstukken", label: "Bewijsstukken", icon: "file-text" },
+  { view: "skills", label: "Skills", icon: "skills" },
+  { view: "planning", label: "Planning", icon: "planning" },
+  { view: "reflectie", label: "Reflectie", icon: "reflect" },
+  { view: "settings", label: "Instellingen", icon: "settings" },
+];
+
+// Startup splash: a calm fade-in of the logo + tagline, a shared "inzoom"
+// transition into the app name growing from small to full size, a 2s hold,
+// then the same transition again into the actual app. Runs on a fixed timer
+// so the animation always plays out in full; if the real data (normally
+// near-instant, since it's a local file) somehow takes longer, the last
+// frame just holds until it's ready.
+type SplashStage = "brand" | "brand-exit" | "name" | "name-exit";
+
+// Keep these in sync with the animation durations in styles.css
+// (splash-fade-in / splash-zoom-out / splash-zoom-in). Total run time is
+// ~3s: 500 (fade-in) + 150 (hold) + 350 (zoom-out) + 350 (zoom-in) + 1300
+// (hold name) + 350 (zoom-out) = 3000ms.
+const SPLASH_FADE_IN_MS = 500; // duration of the brand's own fade-in
+const SPLASH_HOLD_BRAND_MS = 150; // extra pause once fully visible, before zooming out
+const SPLASH_TRANSITION_MS = 350; // shared zoom-out/zoom-in duration
+const SPLASH_HOLD_NAME_MS = 1300; // "Innovation Logboek" stays on screen
+
+function SplashScreen({ onDone }: { onDone: () => void }) {
+  const [stage, setStage] = useState<SplashStage>("brand");
+
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
+
+    // Only start counting down to the exit once the fade-in has actually
+    // finished playing, so the two animations never overlap/cut each other off.
+    let t = SPLASH_FADE_IN_MS + SPLASH_HOLD_BRAND_MS;
+    at(t, () => setStage("brand-exit"));
+    t += SPLASH_TRANSITION_MS;
+    at(t, () => setStage("name"));
+    t += SPLASH_TRANSITION_MS; // name's own zoom-in animation
+    t += SPLASH_HOLD_NAME_MS;
+    at(t, () => setStage("name-exit"));
+    t += SPLASH_TRANSITION_MS;
+    at(t, onDone);
+
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="splash-screen">
+      <div className="drag-region fixed top-0 left-0 right-0 h-13" />
+      {(stage === "brand" || stage === "brand-exit") && (
+        <div className={`splash-stage splash-brand${stage === "brand-exit" ? " splash-exit" : ""}`}>
+          <img
+            src={studioBeeftinkLogo}
+            alt=""
+            style={{ width: "56px", height: "auto", opacity: 0.9 }}
+          />
+          <p className="splash-tagline">
+            Een <span className="accent">Studio Beeftink</span> product
+          </p>
+        </div>
+      )}
+      {(stage === "name" || stage === "name-exit") && (
+        <div className={`splash-stage splash-name${stage === "name-exit" ? " splash-exit" : ""}`}>
+          <p className="splash-appname">
+            <span className="accent">Innovation</span> Logboek
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function HomeView() {
   const logbook = useLogbook();
+  const [splashDone, setSplashDone] = useState(false);
 
-  if (!logbook.loaded) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center" style={{ gap: "18px" }}>
-        <div className="drag-region fixed top-0 left-0 right-0 h-13" />
-        <img
-          src={studioBeeftinkLogo}
-          alt=""
-          style={{ width: "56px", height: "auto", opacity: 0.9 }}
-        />
-        <p className="text-secondary" style={{ fontSize: "var(--fs-base)" }}>
-          Een Studio Beeftink product
-        </p>
-      </div>
-    );
+  if (!splashDone || !logbook.loaded) {
+    return <SplashScreen onDone={() => setSplashDone(true)} />;
   }
 
   if (logbook.state.view === "setup") {
@@ -45,6 +119,13 @@ export function HomeView() {
   if (state.view === "settings") topbarTitle = "Instellingen";
   else if (state.view === "proj-settings") topbarTitle = `Projectinstellingen — ${logbook.cur()}`;
   else if (state.view === "project") topbarTitle = logbook.cur();
+  else if (state.view === "projects") topbarTitle = "Projecten";
+  else if (state.view === "moments") topbarTitle = "Ontwikkelmomenten";
+  else if (state.view === "bewijsstukken") topbarTitle = "Bewijsstukken";
+  else if (state.view === "skills") topbarTitle = "Skills";
+  else if (state.view === "planning") topbarTitle = "Planning";
+  else if (state.view === "reflectie") topbarTitle = "Reflectie";
+  else if (state.view === "profile") topbarTitle = "Profiel";
 
   const showProjectActions =
     state.view === "project" && state.projOnboarded[logbook.cur()];
@@ -58,54 +139,53 @@ export function HomeView() {
             className="sb-brand"
             onClick={() => logbook.navigate("home")}
           >
-            <div className="sb-brand-title">CE_Innovation</div>
+            <div className="sb-brand-title">Innovation</div>
             <div className="sb-brand-sub">Logboek</div>
           </div>
 
           <div className="sb-projects">
-            {YEAR_GROUPS.map((yr) => {
-              const open = state.openYears[yr.id];
+            {NAV_ITEMS.map((item) => {
+              const active =
+                state.view === item.view ||
+                // Drilling into a specific project still highlights "Projecten".
+                ((state.view === "project" || state.view === "proj-settings") && item.view === "projects");
               return (
-                <div key={yr.id}>
-                  <button
-                    className="sb-year-btn"
-                    onClick={() => logbook.toggleYear(yr.id)}
-                  >
-                    <span>{yr.label}</span>
-                    <span className={`sb-year-chevron${open ? " open" : ""}`}>
-                      <AppIcon name="chevron-right" size="xs" strokeWidth={2.5} />
-                    </span>
-                  </button>
-                  {open &&
-                    yr.indices.map((idx) => {
-                      const label = state.projNames[idx] || `Project ${idx + 1}`;
-                      const active =
-                        (state.view === "project" || state.view === "proj-settings") &&
-                        state.projIdx === idx;
-                      const color = PROJ_COLORS[idx % PROJ_COLORS.length];
-                      return (
-                        <button
-                          key={idx}
-                          className={`sb-btn${active ? " active" : ""}`}
-                          onClick={() => logbook.navigate("project", idx)}
-                        >
-                          <span className="sb-dot" style={{ background: color }} />
-                          <span>{label}</span>
-                        </button>
-                      );
-                    })}
-                </div>
+                <button
+                  key={item.view}
+                  className={`sb-btn${active ? " active" : ""}`}
+                  onClick={() => logbook.navigate(item.view)}
+                >
+                  <AppIcon name={item.icon} size="sm" />
+                  <span>{item.label}</span>
+                </button>
               );
             })}
           </div>
 
           <div className="sb-bottom">
+            <div className="sb-tip">
+              <div className="sb-tip-title">
+                <AppIcon name="tip" size="xs" strokeWidth={2} /> Tip van vandaag
+              </div>
+              <p className="sb-tip-text">{tipOfTheDay()}</p>
+            </div>
+
             <button
-              className={`sb-settings${state.view === "settings" ? " active" : ""}`}
-              onClick={() => logbook.navigate("settings")}
+              className={`sb-profile-card${state.view === "profile" ? " active" : ""}`}
+              onClick={() => logbook.navigate("profile")}
             >
-              <AppIcon name="settings" size="sm" />
-              <span>Instellingen</span>
+              {state.profilePhoto ? (
+                <img src={state.profilePhoto} alt="" className="sb-profile-avatar" />
+              ) : (
+                <div className="sb-profile-avatar sb-profile-avatar-fallback">
+                  <AppIcon name="user" size="sm" />
+                </div>
+              )}
+              <div className="sb-profile-info">
+                <div className="sb-profile-name">{state.studentName || "Naam instellen"}</div>
+                <div className="sb-profile-role">Student</div>
+              </div>
+              <AppIcon name="chevron-down" size="xs" strokeWidth={2.5} />
             </button>
           </div>
         </div>
@@ -157,6 +237,13 @@ function MainContent() {
     if (!state.projOnboarded[key]) return <OnboardingView />;
     return <ProjectView />;
   }
+  if (state.view === "projects") return <ProjectsView />;
+  if (state.view === "moments") return <MomentsView />;
+  if (state.view === "bewijsstukken") return <BewijsstukkenView />;
+  if (state.view === "skills") return <SkillsOverviewView />;
+  if (state.view === "planning") return <PlanningView />;
+  if (state.view === "reflectie") return <ReflectieView />;
+  if (state.view === "profile") return <ProfileView />;
   return <DashboardView />;
 }
 

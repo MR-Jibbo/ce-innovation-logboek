@@ -5,7 +5,14 @@ export type ViewName =
   | "home"
   | "project"
   | "settings"
-  | "proj-settings";
+  | "proj-settings"
+  | "projects"
+  | "moments"
+  | "bewijsstukken"
+  | "skills"
+  | "planning"
+  | "reflectie"
+  | "profile";
 
 export type SetupStep = "location" | "profile";
 
@@ -89,6 +96,19 @@ export interface OpenYears {
   jaar2: boolean;
 }
 
+export interface Deadline {
+  id: string;
+  title: string;
+  date: string; // ISO yyyy-mm-dd
+  projectKey?: string;
+}
+
+export interface Reflection {
+  id: string;
+  date: string; // ISO yyyy-mm-dd
+  text: string;
+}
+
 export interface AppState {
   view: ViewName;
   projIdx: number;
@@ -103,6 +123,9 @@ export interface AppState {
   entries: Entry[];
   lukEntries: LukEntry[];
   openYears: OpenYears;
+  deadlines: Deadline[];
+  reflections: Reflection[];
+  profilePhoto: string | null;
 }
 
 export type ModalState =

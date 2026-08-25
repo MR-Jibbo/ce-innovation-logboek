@@ -7,6 +7,8 @@ import type {
   ViewName,
   VisibleProjects,
   OpenYears,
+  Deadline,
+  Reflection,
 } from "./types";
 import { DEFAULT_PROJ_NAMES, YEAR_GROUPS, uid } from "./constants";
 
@@ -23,6 +25,9 @@ interface BackendData {
   entries: Entry[];
   lukEntries: LukEntry[];
   openYears: OpenYears;
+  deadlines?: Deadline[];
+  reflections?: Reflection[];
+  profilePhoto?: string | null;
 }
 
 const DEFAULT_STATE: AppState = {
@@ -39,6 +44,9 @@ const DEFAULT_STATE: AppState = {
   entries: [],
   lukEntries: [],
   openYears: { jaar1: true, jaar2: false },
+  deadlines: [],
+  reflections: [],
+  profilePhoto: null,
 };
 
 export function useLogbook() {
@@ -79,6 +87,9 @@ export function useLogbook() {
           entries: data.entries || [],
           lukEntries: data.lukEntries || [],
           openYears: data.openYears || { jaar1: true, jaar2: false },
+          deadlines: data.deadlines || [],
+          reflections: data.reflections || [],
+          profilePhoto: data.profilePhoto || null,
         });
         setSetupStep("profile");
       } catch (e) {
@@ -126,6 +137,9 @@ export function useLogbook() {
         entries: newState.entries,
         lukEntries: newState.lukEntries,
         openYears: newState.openYears,
+        deadlines: newState.deadlines,
+        reflections: newState.reflections,
+        profilePhoto: newState.profilePhoto,
       };
       try {
         await window.glazeAPI.glaze.ipc.invoke("logbook:save", backendData);
@@ -292,6 +306,55 @@ export function useLogbook() {
     }));
   }, [update]);
 
+  // ─── Planning (deadlines) ──────────────────────────────────────────────────
+  const addDeadline = useCallback((deadline: Omit<Deadline, "id">) => {
+    update((prev) => ({
+      ...prev,
+      deadlines: [...(prev.deadlines || []), { ...deadline, id: uid("d") }],
+    }));
+  }, [update]);
+
+  const updateDeadline = useCallback((id: string, patch: Partial<Deadline>) => {
+    update((prev) => ({
+      ...prev,
+      deadlines: (prev.deadlines || []).map((d) => d.id === id ? { ...d, ...patch } : d),
+    }));
+  }, [update]);
+
+  const deleteDeadline = useCallback((id: string) => {
+    update((prev) => ({
+      ...prev,
+      deadlines: (prev.deadlines || []).filter((d) => d.id !== id),
+    }));
+  }, [update]);
+
+  // ─── Reflectie ─────────────────────────────────────────────────────────────
+  const addReflection = useCallback((reflection: Omit<Reflection, "id">) => {
+    update((prev) => ({
+      ...prev,
+      reflections: [...(prev.reflections || []), { ...reflection, id: uid("r") }],
+    }));
+  }, [update]);
+
+  const updateReflection = useCallback((id: string, patch: Partial<Reflection>) => {
+    update((prev) => ({
+      ...prev,
+      reflections: (prev.reflections || []).map((r) => r.id === id ? { ...r, ...patch } : r),
+    }));
+  }, [update]);
+
+  const deleteReflection = useCallback((id: string) => {
+    update((prev) => ({
+      ...prev,
+      reflections: (prev.reflections || []).filter((r) => r.id !== id),
+    }));
+  }, [update]);
+
+  // ─── Profiel ────────────────────────────────────────────────────────────────
+  const setProfilePhoto = useCallback((dataUrl: string | null) => {
+    update((prev) => ({ ...prev, profilePhoto: dataUrl }));
+  }, [update]);
+
   // ─── Sidebar year toggle ──────────────────────────────────────────────────
   const toggleYear = useCallback((yearId: "jaar1" | "jaar2") => {
     update((prev) => {
@@ -357,6 +420,13 @@ export function useLogbook() {
     updateLukEntry,
     deleteLukEntry,
     updateSkillPlan,
+    addDeadline,
+    updateDeadline,
+    deleteDeadline,
+    addReflection,
+    updateReflection,
+    deleteReflection,
+    setProfilePhoto,
     toggleYear,
     exportPdf,
     exportWord,

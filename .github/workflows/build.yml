@@ -53,6 +53,29 @@ jobs:
           # explicitly opt it out of publishing on its own.
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
+      # electron-builder's default dmg naming only marks the arm64 (Apple
+      # Silicon) build with a "-arm64" suffix and leaves the x64 (Intel)
+      # build unlabeled. Relabel both explicitly so a non-technical
+      # downloader on the Releases page can immediately tell which of the
+      # two Mac files matches their Mac, without needing to know what
+      # "x64"/"arm64" means.
+      - name: Rename Mac installers for clarity
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd dist
+          for f in *-arm64.dmg; do
+            [ -e "$f" ] || continue
+            mv "$f" "${f%-arm64.dmg} (Apple Silicon).dmg"
+          done
+          for f in *.dmg; do
+            [ -e "$f" ] || continue
+            case "$f" in
+              *"(Apple Silicon)"*) continue ;;
+            esac
+            mv "$f" "${f%.dmg} (Intel).dmg"
+          done
+          ls -la
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -60,61 +83,28 @@ jobs:
           path: ${{ matrix.artifact-glob }}
           if-no-files-found: error
 
-      # macOS-only: because the app isn't signed with a paid Apple Developer
-      # certificate, opening the .dmg-installed app directly can show a
-      # confusing (false) "is damaged" Gatekeeper message. A double-click
-      # installer script (installer/Installeer.command) sidesteps this for
-      # non-technical users — see README.md for details.
-      - name: Build double-click installer zip (macOS only)
-        if: matrix.os == 'macos-latest'
-        run: |
-          set -e
-          mkdir -p dist/zips
-          for appdir in dist/mac*/; do
-            app_path=$(find "$appdir" -maxdepth 1 -name "*.app")
-            if [ -z "$app_path" ]; then
-              echo "Geen .app gevonden in $appdir, overslaan."
-              continue
-            fi
-            if [[ "$appdir" == *arm64* ]]; then
-              label="Apple Silicon"
-            else
-              label="Intel"
-            fi
-            stage_name="CE-Innovation Logboek Installer ($label)"
-            stage_dir="dist/zips/$stage_name"
-            rm -rf "$stage_dir"
-            mkdir -p "$stage_dir"
-            ditto "$app_path" "$stage_dir/$(basename "$app_path")"
-            cp installer/Installeer.command "$stage_dir/"
-            chmod +x "$stage_dir/Installeer.command"
-            (cd dist/zips && zip -r -y -q "${stage_name}.zip" "$stage_name")
-          done
-          ls -la dist/zips
-
-      - name: Upload double-click installer zips
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: installer-zip-macos-latest
-          path: dist/zips/*.zip
-          if-no-files-found: error
-
   release:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download all installers
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
+      # Three installers per release (Mac Intel, Mac Apple Silicon, Windows)
+      # plus the short install guide PDF. No zip/script bundles — the guide
+      # covers the (one-line) manual step needed on Mac.
       - name: Create GitHub Release with installers
         uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/installer-macos-latest/*.dmg
-            artifacts/installer-zip-macos-latest/*.zip
             artifacts/installer-windows-latest/*.exe
+            installer/LEES DIT VOOR INSTALLEREN.pdf
+            installer/Onepager.pdf
           generate_release_notes: true

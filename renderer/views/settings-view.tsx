@@ -3,6 +3,7 @@ import { useLogbookCtx } from "../lib/logbook-context";
 import { pk } from "../lib/use-logbook";
 import type { VisibleProjects } from "../lib/types";
 import { AppIcon } from "../components/AppIcon";
+import { getThemePreference, setThemePreference, type ThemePreference } from "../lib/theme";
 
 export function SettingsView() {
   const ctx = useLogbookCtx();
@@ -12,6 +13,18 @@ export function SettingsView() {
   const [saved, setSaved] = useState(false);
   const [changingFolder, setChangingFolder] = useState(false);
   const [folderMoved, setFolderMoved] = useState(false);
+  const [theme, setTheme] = useState<ThemePreference>(getThemePreference());
+
+  const THEME_OPTIONS: { key: ThemePreference; label: string }[] = [
+    { key: "light", label: "Licht" },
+    { key: "dark", label: "Donker" },
+    { key: "system", label: "Systeem" },
+  ];
+
+  const handleThemeChange = (pref: ThemePreference) => {
+    setTheme(pref);
+    setThemePreference(pref);
+  };
 
   const defaultVP = {
     jaar1: state.studieJaar === 1 ? [0, 1, 2, 3, 4] : [],
@@ -166,6 +179,27 @@ export function SettingsView() {
             {changingFolder ? "Bezig met verplaatsen…" : folderMoved ? "Map gewijzigd ✓" : "Andere map kiezen…"}
           </span>
         </button>
+      </div>
+
+      {/* Thema */}
+      <div className="card" style={{ marginBottom: "18px" }}>
+        <h2 style={{ fontSize: "var(--fs-md)", fontWeight: "var(--fw-bold)", marginBottom: "4px" }}>
+          Thema
+        </h2>
+        <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-tertiary)", marginBottom: "14px" }}>
+          Kies een lichte of donkere weergave, of volg de instelling van je besturingssysteem.
+        </p>
+        <div className="flex-center" style={{ gap: "10px" }}>
+          {THEME_OPTIONS.map(({ key, label }) => (
+            <button
+              key={key}
+              className={`seg-btn${theme === key ? " sel" : ""}`}
+              onClick={() => handleThemeChange(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Disclaimer */}

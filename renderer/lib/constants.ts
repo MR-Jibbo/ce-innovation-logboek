@@ -90,3 +90,27 @@ export const YEAR_GROUPS = [
 export function uid(prefix: string): string {
   return prefix + "_" + Math.random().toString(36).slice(2, 9);
 }
+
+// ─── Tip van vandaag ────────────────────────────────────────────────────────
+// A different tip each day (deterministic by day-of-year), no data needed.
+export const DAILY_TIPS: string[] = [
+  "Kleine stappen elke dag leiden tot grote groei. Focus op vooruitgang, niet op perfectie.",
+  "Log een ontwikkelmoment het liefst dezelfde dag nog — details vervagen snel.",
+  "Een goede reflectie beantwoordt niet alleen wát er gebeurde, maar ook waaróm het zo ging.",
+  "Bewijsstukken hoeven niet perfect te zijn. Een screenshot of foto is vaak al genoeg.",
+  "Sta je vast? Bekijk je actiepunten van vorige week nog eens terug.",
+  "Vraag gericht feedback: niet 'was het goed?', maar 'wat had ik hier beter kunnen doen?'.",
+  "Plan je deadlines op tijd in, dan voorkom je stress in de laatste week.",
+  "Koppel je ontwikkelmomenten aan concrete situaties — dat maakt je portfolio overtuigender.",
+  "Neem even de tijd om terug te lezen wat je twee weken geleden hebt geschreven.",
+  "Doorzettingsvermogen tonen begint met eerlijk benoemen wat niet lukte, en waarom.",
+  "Een korte dagelijkse notitie is waardevoller dan een lange notitie eens per maand.",
+  "Vier ook de kleine overwinningen — niet alles hoeft een groot leermoment te zijn.",
+];
+
+export function tipOfTheDay(): string {
+  const start = new Date(new Date().getFullYear(), 0, 0);
+  const diff = Date.now() - start.getTime();
+  const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+  return DAILY_TIPS[dayOfYear % DAILY_TIPS.length];
+}

@@ -4,8 +4,14 @@ import { RouterProvider } from "@tanstack/react-router";
 import { router, queryClient } from "./router";
 import "../styles.css";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { getThemePreference, setThemePreference } from "../lib/theme";
 
 document.title = "CE-Innovation Logboek";
+
+// The inline script in main-window.html already applied the right class
+// before first paint; this call is what attaches the live listener for
+// "Systeem" (OS theme changes while the app is open).
+setThemePreference(getThemePreference());
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {

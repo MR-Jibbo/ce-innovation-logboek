@@ -31,7 +31,7 @@ Dit project staat al klaar, als een zip-bestand dat je van mij hebt gekregen
    ```
    (Tip: sleep de map vanuit Finder/Verkenner het terminalvenster in na `cd `, dan vult
    hij het pad automatisch in.)
-4. Voer vanuit die map deze commando's uit (vervang `JOUW-GEBRUIKERSNAAM` door je
+4. Voer vanuit die map deze commando's uit (vervang `MR-Jibbo` door je
    GitHub-gebruikersnaam):
 
 ```bash
@@ -39,7 +39,7 @@ git init
 git add .
 git commit -m "Eerste versie van de app"
 git branch -M main
-git remote add origin https://github.com/JOUW-GEBRUIKERSNAAM/ce-innovation-logboek.git
+git remote add origin https://github.com/MR-Jibbo/ce-innovation-logboek.git
 git push -u origin main
 ```
 
@@ -56,18 +56,19 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-Ga daarna naar je repository op GitHub → tabblad **Actions**. Je ziet daar een workflow draaien ("Build & Release"), dit duurt meestal 5–10 minuten. Als hij klaar is (groen vinkje), ga naar het tabblad **Releases** (rechts op de hoofdpagina van je repo, of via `github.com/JOUW-GEBRUIKERSNAAM/ce-innovation-logboek/releases`) — daar staat een nieuwe release met deze downloadbare bestanden:
+Ga daarna naar je repository op GitHub → tabblad **Actions**. Je ziet daar een workflow draaien ("Build & Release"), dit duurt meestal 5–10 minuten. Als hij klaar is (groen vinkje), ga naar het tabblad **Releases** (rechts op de hoofdpagina van je repo, of via `github.com/MR-Jibbo/ce-innovation-logboek/releases`) — daar staat een nieuwe release met deze downloadbare bestanden: drie installers, bewust niet meer, om het simpel te houden, plus twee korte PDF's:
 
-- **`CE-Innovation Logboek Installer (Apple Silicon).zip`** → **stuur dit door aan Mac-gebruikers** (nieuwere Macs, vanaf eind 2020, met een M1/M2/M3/M4-chip — de meeste studenten).
-- `CE-Innovation Logboek Installer (Intel).zip` → voor Mac-gebruikers met een oudere Intel-Mac.
-- `CE-Innovation Logboek Setup 1.0.0.exe` → voor Windows-gebruikers.
-- `CE-Innovation Logboek-1.0.0.dmg` / `-arm64.dmg` → alternatieve Mac-installatiemethode (zie hieronder waarom de zip-bestanden hierboven de aanbevolen route zijn).
+- **`CE-Innovation Logboek 2.0.0 (Apple Silicon).dmg`** → voor nieuwere Macs (vanaf eind 2020, met een M1/M2/M3/M4-chip — de meeste studenten).
+- `CE-Innovation Logboek 2.0.0 (Intel).dmg` → voor oudere Intel-Macs.
+- `CE-Innovation Logboek Setup 2.0.0.exe` → voor Windows-gebruikers.
+- `LEES DIT VOOR INSTALLEREN.pdf` → korte installatiehandleiding (dezelfde drie stappen als hieronder, om door te sturen).
+- `Onepager.pdf` → één pagina over de app zelf: wat hij doet en voor wie.
 
 Iedereen met die link kan die bestanden downloaden en installeren, ook zonder GitHub-account.
 
-**Hoe installeert een Mac-gebruiker de zip?** Downloaden → uitpakken (dubbelklikken) → in de uitgepakte map dubbelklikken op **Installeer.command**. Er opent even een Terminal-venster dat vanzelf de app installeert en opent — geen verdere handelingen nodig. De eerste keer kan macOS nog een milde "onbekende ontwikkelaar"-waarschuwing tonen bij het openen van dat installatiescript zelf; zie de uitleg hieronder.
+**Hoe installeert een Mac-gebruiker de `.dmg`?** Downloaden → dubbelklikken om te openen → de app naar de **Programma's**-snelkoppeling in dat venster slepen. Zie hieronder voor de melding die macOS daarbij kan tonen.
 
-**Volgende versie uitbrengen?** Herhaal stap 3 gewoon met een nieuw versienummer (`v1.0.1`, `v1.1.0`, etc.) nadat je nieuwe code hebt gepusht.
+**Volgende versie uitbrengen?** Werk het versienummer bij in `package.json` (het veld `"version"`), commit die wijziging, en herhaal stap 3 met een tag die daarbij past (`v2.0.1`, `v2.1.0`, etc.) nadat je je nieuwe code hebt gepusht. Tag en `package.json`-versie horen bij elkaar overeen te komen — anders staat er in de bestandsnamen een ander versienummer dan de tag zelf aangeeft.
 
 ### Belangrijk om te weten: geen "app store"-goedkeuring
 
@@ -75,34 +76,23 @@ Omdat de app niet gesigneerd is met een betaald Apple Developer-account (€99/j
 Windows-certificaat, tonen macOS en Windows een waarschuwing bij de eerste keer openen.
 Dit is normaal voor kleine, niet-commerciële apps en geen teken dat er iets mis is.
 
-**Voor Mac-gebruikers lost het installatiescript (`.zip` → `Installeer.command`) dit
-automatisch op** — daarom is dat de aanbevolen downloadoptie in Releases, niet de losse
-`.dmg`. Studenten hoeven dus geen Terminal-commando's te kennen of uit te voeren: gewoon
-uitpakken en op **Installeer.command** dubbelklikken. Bij het openen van dát ene bestand
-kan macOS nog een milde melding tonen ("kan niet worden geopend omdat de ontwikkelaar
-niet geverifieerd kan worden") — dat is anders dan de ernstigere "is beschadigd"-melding
-die de kale `.dmg`-route soms geeft, en heeft altijd een simpele bypass: rechtsklik (of
-ctrl-klik) op **Installeer.command** → **Open** → **Open** bevestigen. Daarna doet het
-script de rest vanzelf (app naar Programma's kopiëren, beveiligingsvlag verwijderen, app
-openen).
-
-**Wil je of iemand anders toch de kale `.dmg` gebruiken** (bijvoorbeeld omdat je het
-installatiescript liever niet vertrouwt, snap ik) **en zie je "is beschadigd en kan niet
-worden geopend"**: dit is geen echt beschadigd bestand, gewoon macOS' strengere
-Gatekeeper-gedrag voor apps zonder betaald certificaat. Op te lossen via Terminal:
+**Mac — "is beschadigd en kan niet worden geopend"?** Dit is geen echt beschadigd
+bestand, gewoon macOS' strengere Gatekeeper-gedrag voor apps zonder betaald certificaat.
+Op te lossen via Terminal, nadat de app naar Programma's is gesleept:
 ```bash
 xattr -cr "/Applications/CE-Innovation Logboek.app"
 ```
+Open de app daarna gewoon opnieuw. Deze stap staat ook beschreven in
+`LEES DIT VOOR INSTALLEREN.pdf`, die automatisch mee in elke release komt te staan.
 
 **Windows**: Windows SmartScreen kan een waarschuwing tonen ("Windows heeft je pc
 beschermd"). Klik op **Meer info** → **Toch uitvoeren**. Ook dit is eenmalig per
-installatie, en heeft (anders dan de macOS "is beschadigd"-melding) altijd een
-werkende bypass-knop.
+installatie, en heeft altijd een werkende bypass-knop.
 
-Wil je dit risico voor Mac-gebruikers volledig wegnemen (zelfs de milde
-"onbekende ontwikkelaar"-melding bij het installatiescript)? Dat kan alleen door de app
-te laten *notariseren* door Apple, wat een betaald Apple Developer-account vereist. Zeg
-het me als je dat ooit overweegt, dan help ik de configuratie daarvoor aan te passen.
+Wil je dit risico volledig wegnemen (geen enkele waarschuwing meer, op geen van beide
+platforms)? Dat kan alleen door de app te laten *signeren/notariseren*, wat een betaald
+Apple Developer-account (en voor Windows een codesigning-certificaat) vereist. Zeg het me
+als je dat ooit overweegt, dan help ik de configuratie daarvoor aan te passen.
 
 ## Hoe pas je de app later nog aan?
 

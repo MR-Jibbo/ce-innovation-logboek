@@ -31,6 +31,9 @@ export interface LogbookData {
     files: Array<{ id: string; name: string; type: string; dataUrl: string; date: string }>;
   }>;
   openYears: { jaar1: boolean; jaar2: boolean };
+  deadlines?: Array<{ id: string; title: string; date: string; projectKey?: string }>;
+  reflections?: Array<{ id: string; date: string; text: string }>;
+  profilePhoto?: string | null;
 }
 
 const DEFAULT_DATA: LogbookData = {
@@ -48,6 +51,9 @@ const DEFAULT_DATA: LogbookData = {
   entries: [],
   lukEntries: [],
   openYears: { jaar1: true, jaar2: false },
+  deadlines: [],
+  reflections: [],
+  profilePhoto: null,
 };
 
 const DATA_FILE_NAME = "logbook-data.json";
