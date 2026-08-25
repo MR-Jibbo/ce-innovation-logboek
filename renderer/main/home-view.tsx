@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { LogbookCtx, useLogbookCtx } from "../lib/logbook-context";
-import { useLogbook } from "../lib/use-logbook";
+import { useLogbook, yearOfIndex } from "../lib/use-logbook";
 import { tipOfTheDay } from "../lib/constants";
 import { SetupView } from "../views/setup-view";
 import { DashboardView } from "../views/dashboard-view";
@@ -46,6 +46,53 @@ const SPLASH_FADE_IN_MS = 500; // duration of the brand's own fade-in
 const SPLASH_HOLD_BRAND_MS = 1200; // extra pause once fully visible, before zooming out — logo + tagline readable
 const SPLASH_TRANSITION_MS = 350; // shared zoom-out/zoom-in duration
 const SPLASH_HOLD_NAME_MS = 2000; // "Innovation Logboek" stays on screen — readable
+
+interface UpdateCheckResult {
+  hasUpdate: boolean;
+  currentVersion: string;
+  latestVersion: string;
+  releaseUrl: string;
+}
+
+// Checks GitHub Releases (via the main process, see main:checkForUpdate) for
+// a newer published version on mount. Renders nothing until/unless a newer
+// version is actually found — fails silently on any error, so a flaky
+// connection or GitHub being unreachable never shows a broken banner.
+function UpdateBanner() {
+  const [update, setUpdate] = useState<UpdateCheckResult | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    window.glazeAPI.glaze.ipc
+      .invoke<UpdateCheckResult | null>("app:checkForUpdate")
+      .then((result) => {
+        if (!cancelled && result?.hasUpdate) setUpdate(result);
+      })
+      .catch(() => {
+        // Silent — no update banner is a perfectly fine fallback.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!update) return null;
+
+  return (
+    <button
+      className="sb-update-banner"
+      onClick={() => window.glazeAPI.glaze.ipc.invoke("app:openExternal", update.releaseUrl)}
+      title="Klik om de nieuwe versie te downloaden"
+    >
+      <div className="sb-update-banner-title">
+        <AppIcon name="download" size="xs" strokeWidth={2} /> Nieuwe versie beschikbaar
+      </div>
+      <p className="sb-update-banner-text">
+        v{update.latestVersion} is nu te downloaden, klik om naar de release-pagina te gaan.
+      </p>
+    </button>
+  );
+}
 
 function SplashScreen({ onDone }: { onDone: () => void }) {
   const [stage, setStage] = useState<SplashStage>("brand");
@@ -113,16 +160,17 @@ export function HomeView() {
   }
 
   const { state } = logbook;
+  const curYearLabel = ` (Jaar ${yearOfIndex(state.projIdx)})`;
   let topbarTitle = "Dashboard";
-  if (state.view === "proj-settings") topbarTitle = `Projectinstellingen — ${logbook.cur()}`;
-  else if (state.view === "project") topbarTitle = logbook.cur();
+  if (state.view === "proj-settings") topbarTitle = `Projectinstellingen, ${logbook.cur()}${curYearLabel}`;
+  else if (state.view === "project") topbarTitle = `${logbook.cur()}${curYearLabel}`;
   else if (state.view === "projects") topbarTitle = "Projecten";
   else if (state.view === "moments") topbarTitle = "Ontwikkelmomenten";
   else if (state.view === "bewijsstukken") topbarTitle = "Bewijsstukken";
   else if (state.view === "skills") topbarTitle = "Skills";
   else if (state.view === "planning") topbarTitle = "Planning";
   else if (state.view === "reflectie") topbarTitle = "Reflectie";
-  else if (state.view === "profile") topbarTitle = "Profiel";
+  else if (state.view === "profile") topbarTitle = "Instellingen";
 
   const showProjectActions =
     state.view === "project" && state.projOnboarded[logbook.cur()];
@@ -160,6 +208,8 @@ export function HomeView() {
           </div>
 
           <div className="sb-bottom">
+            <UpdateBanner />
+
             <div className="sb-tip">
               <div className="sb-tip-title">
                 <AppIcon name="tip" size="xs" strokeWidth={2} /> Tip van vandaag
@@ -185,7 +235,6 @@ export function HomeView() {
               )}
               <div className="sb-profile-info">
                 <div className="sb-profile-name">{state.studentName || "Naam instellen"}</div>
-                <div className="sb-profile-role">Student</div>
               </div>
               <AppIcon name="chevron-down" size="xs" strokeWidth={2.5} />
             </button>
@@ -199,8 +248,7 @@ export function HomeView() {
             <div className="topbar-title" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               {(state.view === "project" || state.view === "proj-settings") && (
                 <button
-                  className="btn-icon"
-                  style={{ marginLeft: "-6px" }}
+                  className="btn-icon topbar-back-btn"
                   onClick={() => logbook.navigate("projects")}
                   title="Terug naar Projecten"
                 >
@@ -209,7 +257,7 @@ export function HomeView() {
               )}
               {topbarTitle}
               {state.view === "project" && state.completedProjects.includes(logbook.cur()) && (
-                <span className="chip chip-gray" style={{ fontSize: "var(--fs-xs)" }}>Afgerond</span>
+                <span className="chip chip-green" style={{ fontSize: "var(--fs-xs)" }}>Afgerond</span>
               )}
             </div>
             <div className="topbar-actions">

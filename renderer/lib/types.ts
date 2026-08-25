@@ -100,6 +100,7 @@ export interface Deadline {
   title: string;
   date: string; // ISO yyyy-mm-dd
   projectKey?: string;
+  done?: boolean;
 }
 
 export interface Reflection {
@@ -143,5 +144,6 @@ export type ModalState =
   | { type: "lukDetail"; entryId: string }
   | { type: "lukEntryForm"; lukId: string; criterionId: string; periode: string; editId?: string }
   | { type: "completeProject"; key: string }
+  | { type: "photoEditor" }
   | { type: "confirm"; msg: string; onOk: () => void }
   | null;

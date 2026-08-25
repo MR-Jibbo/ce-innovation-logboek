@@ -1,5 +1,6 @@
 import { useLogbookCtx } from "../lib/logbook-context";
 import { LUK_DEFS } from "../lib/constants";
+import { yearSuffix } from "../lib/use-logbook";
 import { AppIcon } from "../components/AppIcon";
 import type { LukEntry } from "../lib/types";
 
@@ -10,6 +11,7 @@ export function BewijsstukkenView() {
   // No explicit date on a LukEntry — id is chronological-ish (uid includes
   // a random suffix, not sortable), so just keep insertion order reversed.
   const sorted = [...state.lukEntries].reverse();
+  const yearOf = (name: string) => yearSuffix(state.projNames, name);
 
   return (
     <div className="animate-fade-in">
@@ -46,7 +48,7 @@ export function BewijsstukkenView() {
               <div className="flex-center" style={{ gap: "10px", marginTop: "5px", fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>
                 {luk && <span>{luk.name}</span>}
                 <span className="dot-row" style={{ gap: "4px" }}>
-                  <AppIcon name="projects" size="xs" /> {e.periode}
+                  <AppIcon name="projects" size="xs" /> {e.periode}{yearOf(e.periode)}
                 </span>
               </div>
             </button>

@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
 import { pk } from "../lib/use-logbook";
 import type { VisibleProjects } from "../lib/types";
@@ -8,37 +8,9 @@ import { getThemePreference, setThemePreference, type ThemePreference } from "..
 export function ProfileView() {
   const ctx = useLogbookCtx();
   const { state } = ctx;
-
-  // ─── Photo ───────────────────────────────────────────────────────────────
-  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        // Keep it small — this is stored inline in logbook-data.json.
-        const max = 320;
-        let w = img.width, h = img.height;
-        if (w > max || h > max) {
-          if (w > h) { h = Math.round(h * (max / w)); w = max; }
-          else { w = Math.round(w * (max / h)); h = max; }
-        }
-        const cv = document.createElement("canvas");
-        cv.width = w; cv.height = h;
-        cv.getContext("2d")!.drawImage(img, 0, 0, w, h);
-        ctx.setProfilePhoto(cv.toDataURL("image/jpeg", 0.85));
-        ctx.setProfilePhotoPosition({ x: 50, y: 50 });
-      };
-      img.src = ev.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  };
-
   const photoPos = state.profilePhotoPosition || { x: 50, y: 50 };
 
-  // ─── Naam + studiejaar + zichtbare projecten (voorheen Instellingen) ──────
+  // ─── Naam + studiejaar + zichtbare projecten ──────────────────────────────
   const [name, setName] = useState(state.studentName);
   const [selJaar, setSelJaar] = useState(state.studieJaar || 1);
   const [saved, setSaved] = useState(false);
@@ -114,74 +86,40 @@ export function ProfileView() {
     window.glazeAPI.glaze.ipc.invoke("app:openExternal", "https://studiobeeftink.nl");
   };
 
-  // ─── Voortgang ─────────────────────────────────────────────────────────────
-  const totalMoments = state.entries.length;
-  const totalProof = state.lukEntries.length;
-  const startedProjects = Object.values(state.projOnboarded).filter(Boolean).length;
-
   return (
     <div className="animate-fade-in" style={{ maxWidth: "860px" }}>
       {/* Photo + naam + studiejaar */}
       <div className="card" style={{ marginBottom: "18px" }}>
         <div className="flex-center" style={{ gap: "18px", alignItems: "flex-start" }}>
-          {state.profilePhoto ? (
-            <img
-              src={state.profilePhoto}
-              alt=""
-              className="profile-avatar-lg"
-              style={{ objectPosition: `${photoPos.x}% ${photoPos.y}%` }}
-            />
-          ) : (
-            <div className="profile-avatar-lg profile-avatar-lg-fallback">
-              <AppIcon name="user" size="xl" />
-            </div>
-          )}
-          <div style={{ flex: 1 }}>
-            <div className="flex-center" style={{ gap: "8px", marginBottom: "10px" }}>
-              <label className="btn-ghost" style={{ fontSize: "var(--fs-sm)", padding: "6px 12px", cursor: "pointer" }}>
-                <AppIcon name="camera" size="xs" /> Profielfoto wijzigen
-                <input type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
-              </label>
-              {state.profilePhoto && (
-                <button
-                  className="btn-ghost"
-                  style={{ fontSize: "var(--fs-sm)", padding: "6px 12px", color: "var(--danger)" }}
-                  onClick={() => ctx.setProfilePhoto(null)}
-                >
-                  Verwijderen
-                </button>
-              )}
-            </div>
-
-            {state.profilePhoto && (
-              <div style={{ maxWidth: "320px" }}>
-                <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", marginBottom: "6px" }}>
-                  Positionering van de foto
-                </p>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", width: "58px", flexShrink: 0 }}>Horizontaal</span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={photoPos.x}
-                    style={{ flex: 1 }}
-                    onChange={(e) => ctx.setProfilePhotoPosition({ ...photoPos, x: Number(e.target.value) })}
-                  />
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", width: "58px", flexShrink: 0 }}>Verticaal</span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={photoPos.y}
-                    style={{ flex: 1 }}
-                    onChange={(e) => ctx.setProfilePhotoPosition({ ...photoPos, y: Number(e.target.value) })}
-                  />
-                </div>
+          <button
+            className="avatar-hover-wrap"
+            onClick={() => ctx.setModal({ type: "photoEditor" })}
+            title="Profielfoto aanpassen"
+          >
+            {state.profilePhoto ? (
+              <img
+                src={state.profilePhoto}
+                alt=""
+                className="profile-avatar-lg"
+                style={{ objectPosition: `${photoPos.x}% ${photoPos.y}%` }}
+              />
+            ) : (
+              <div className="profile-avatar-lg profile-avatar-lg-fallback">
+                <AppIcon name="user" size="xl" />
               </div>
             )}
+            <span className="avatar-hover-overlay">
+              <AppIcon name="camera" size="md" />
+            </span>
+          </button>
+          <div style={{ flex: 1, paddingTop: "6px" }}>
+            <p style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-semibold)", color: "var(--text-primary)", marginBottom: "4px" }}>
+              Profielfoto
+            </p>
+            <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>
+              Hover over de foto en klik op het camera-icoontje om 'm te vervangen of de
+              positionering aan te passen.
+            </p>
           </div>
         </div>
       </div>
@@ -220,7 +158,7 @@ export function ProfileView() {
           Zichtbare onderdelen op dashboard
         </h2>
         <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-tertiary)", marginBottom: "14px" }}>
-          Dit zijn je "Mijn projecten" — verberg onderdelen die je niet wilt zien.
+          Dit zijn je "Mijn projecten", verberg onderdelen die je niet wilt zien.
         </p>
         {VP.map(({ key, label, indices }) => (
           <div key={key}>
@@ -322,23 +260,6 @@ export function ProfileView() {
           "Alles opslaan"
         )}
       </button>
-
-      {/* Voortgang */}
-      <h2 className="section-title">Jouw voortgang</h2>
-      <div className="grid-3" style={{ marginBottom: "18px" }}>
-        <div className="stat-tile">
-          <div style={{ fontSize: "var(--fs-2xl)", fontWeight: "var(--fw-heavy)", color: "var(--pink)", lineHeight: "1" }}>{startedProjects}</div>
-          <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-tertiary)", marginTop: "5px" }}>Projecten gestart</div>
-        </div>
-        <div className="stat-tile">
-          <div style={{ fontSize: "var(--fs-2xl)", fontWeight: "var(--fw-heavy)", color: "var(--stat-orange)", lineHeight: "1" }}>{totalMoments}</div>
-          <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-tertiary)", marginTop: "5px" }}>Ontwikkelmomenten</div>
-        </div>
-        <div className="stat-tile">
-          <div style={{ fontSize: "var(--fs-2xl)", fontWeight: "var(--fw-heavy)", color: "var(--stat-purple)", lineHeight: "1" }}>{totalProof}</div>
-          <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-tertiary)", marginTop: "5px" }}>Bewijsstukken</div>
-        </div>
-      </div>
 
       <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-faint)" }}>
         Een product van{" "}

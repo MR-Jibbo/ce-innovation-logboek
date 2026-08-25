@@ -32,7 +32,7 @@ export interface LogbookData {
     files: Array<{ id: string; name: string; type: string; dataUrl: string; date: string }>;
   }>;
   openYears: { jaar1: boolean; jaar2: boolean };
-  deadlines?: Array<{ id: string; title: string; date: string; projectKey?: string }>;
+  deadlines?: Array<{ id: string; title: string; date: string; projectKey?: string; done?: boolean }>;
   reflections?: Array<{ id: string; date: string; text: string }>;
   profilePhoto?: string | null;
   profilePhotoPosition?: { x: number; y: number };

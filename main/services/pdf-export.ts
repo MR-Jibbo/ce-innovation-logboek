@@ -96,7 +96,7 @@ function lukHtml(data: LogbookData, lukDefs: LukDef[], key: string): string {
 }
 
 function buildBody(data: LogbookData, allSkills: SkillDef[], lukDefs: LukDef[], projectKey: string): string {
-  return `<h1>Logboek &mdash; ${escapeHtml(projectKey)}</h1>${skillsHtml(data, allSkills, projectKey)}${lukHtml(data, lukDefs, projectKey)}`;
+  return `<h1>Logboek, ${escapeHtml(projectKey)}</h1>${skillsHtml(data, allSkills, projectKey)}${lukHtml(data, lukDefs, projectKey)}`;
 }
 
 function buildFullHtml(body: string, title: string): string {
@@ -176,7 +176,7 @@ function buildWordDocument(
   children.push(
     new Paragraph({
       heading: HeadingLevel.HEADING_1,
-      children: [new TextRun({ text: `Logboek — ${projectKey}`, bold: true })],
+      children: [new TextRun({ text: `Logboek, ${projectKey}`, bold: true })],
       border: { bottom: { color: "E50056", space: 1, style: BorderStyle.SINGLE, size: 6 } },
     }),
   );

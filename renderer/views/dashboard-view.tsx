@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
-import { getGreeting, pk, yearOfIndex, daysUntilLabel } from "../lib/use-logbook";
+import { getGreeting, pk, yearOfIndex, yearSuffix, daysUntilLabel } from "../lib/use-logbook";
 import { ALL_SKILLS, PROJ_COLORS } from "../lib/constants";
 import { AppIcon } from "../components/AppIcon";
 import type { Entry, LukEntry, Deadline } from "../lib/types";
@@ -31,11 +31,12 @@ export function DashboardView() {
     ({ name }) => state.projOnboarded[name] && !state.completedProjects.includes(name),
   );
 
-  // Afgeronde projecten: via de "Afronden"-knop op een project.
-  const afgerondeProjecten = state.completedProjects.map((name) => ({
-    idx: state.projNames.indexOf(name),
-    name,
-  }));
+  // Afgeronde projecten: via de "Afronden"-knop op een project — en alleen
+  // als het project nog zichtbaar/geselecteerd staat (anders verdwijnt het
+  // hier ook als je het in je Profiel/Instellingen hebt uitgezet).
+  const afgerondeProjecten = state.completedProjects
+    .map((name) => ({ idx: state.projNames.indexOf(name), name }))
+    .filter(({ idx }) => allVisibleIndices.includes(idx));
 
   const relEntries = state.entries.filter((e: Entry) => allVisibleKeys.includes(e.periode));
   const sortedSkills = [...ALL_SKILLS]
@@ -49,7 +50,7 @@ export function DashboardView() {
 
   const today = todayISO();
   const upcomingDeadlines = (state.deadlines || [])
-    .filter((d: Deadline) => d.date >= today)
+    .filter((d: Deadline) => !d.done && d.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 5);
 
@@ -79,6 +80,7 @@ export function DashboardView() {
               state={state}
               onClick={(idx) => ctx.navigate("project", idx)}
               emptyText="Nog geen projecten gestart."
+              showYear
             />
             <ProjectListColumn
               title="Afgeronde projecten"
@@ -86,6 +88,7 @@ export function DashboardView() {
               state={state}
               onClick={(idx) => idx >= 0 && ctx.navigate("project", idx)}
               emptyText="Nog geen projecten afgerond."
+              showYear
             />
           </div>
 
@@ -126,25 +129,21 @@ export function DashboardView() {
                     </p>
                   </div>
                 ) : (
-                  recentEntries.map((e: Entry) => {
-                    const skill = ALL_SKILLS.find((s) => s.id === e.skillId);
-                    return (
-                      <button
-                        key={e.id}
-                        className="entry-row"
-                        style={{ width: "100%" }}
-                        onClick={() => ctx.setModal({ type: "entryDetail", entryId: e.id })}
-                      >
-                        <div className="flex-between">
-                          <div className="dot-row" style={{ minWidth: 0 }}>
-                            {skill && <span className="dot" style={{ width: "7px", height: "7px", background: skill.color, flexShrink: 0 }} />}
-                            <span style={{ fontSize: "var(--fs-sm)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.title}</span>
-                          </div>
-                          <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", flexShrink: 0 }}>{e.periode}</span>
-                        </div>
-                      </button>
-                    );
-                  })
+                  recentEntries.map((e: Entry) => (
+                    <button
+                      key={e.id}
+                      className="entry-row"
+                      style={{ width: "100%" }}
+                      onClick={() => ctx.setModal({ type: "entryDetail", entryId: e.id })}
+                    >
+                      <div className="flex-between">
+                        <span style={{ fontSize: "var(--fs-sm)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{e.title}</span>
+                        <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", flexShrink: 0 }}>
+                          {e.periode}{yearSuffix(state.projNames, e.periode)}
+                        </span>
+                      </div>
+                    </button>
+                  ))
                 )}
               </div>
               {recentEntriesAll.length > RECENT_PAGE_SIZE && (
@@ -160,12 +159,7 @@ export function DashboardView() {
 
             {/* Aankomende deadlines */}
             <div>
-              <div className="flex-between" style={{ marginBottom: "14px" }}>
-                <h2 className="section-title" style={{ margin: "0" }}>Aankomende deadlines</h2>
-                <button className="btn-link" style={{ fontSize: "var(--fs-sm)" }} onClick={() => ctx.navigate("planning")}>
-                  Planning
-                </button>
-              </div>
+              <h2 className="section-title">Aankomende deadlines</h2>
               <div className="card">
                 {upcomingDeadlines.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "20px 10px" }}>
@@ -181,16 +175,21 @@ export function DashboardView() {
                   </div>
                 ) : (
                   upcomingDeadlines.map((d: Deadline) => (
-                    <div key={d.id} className="entry-row" style={{ cursor: "default" }}>
+                    <button
+                      key={d.id}
+                      className="entry-row"
+                      style={{ width: "100%" }}
+                      onClick={() => ctx.navigate("planning")}
+                    >
                       <div className="flex-between">
                         <span style={{ fontSize: "var(--fs-sm)" }}>{d.title}</span>
                         <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", textAlign: "right" }}>
-                          {d.date}{d.projectKey ? ` · ${d.projectKey}` : ""}
+                          {d.date}{d.projectKey ? ` · ${d.projectKey}${yearSuffix(state.projNames, d.projectKey)}` : ""}
                           <br />
                           <span style={{ color: "var(--pink)", fontWeight: "var(--fw-semibold)" }}>{daysUntilLabel(d.date)}</span>
                         </span>
                       </div>
-                    </div>
+                    </button>
                   ))
                 )}
               </div>

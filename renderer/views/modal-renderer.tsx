@@ -51,6 +51,10 @@ export function ModalRenderer() {
       size = "sm";
       box = <CompleteProjectModal projectKey={modal.key} onClose={close} />;
       break;
+    case "photoEditor":
+      size = "sm";
+      box = <PhotoEditorModal onClose={close} />;
+      break;
     default:
       return null;
   }
@@ -332,7 +336,7 @@ function EntryFormModal({ skillId, periode, editId, onClose }: {
 
   return (
     <>
-      <ModalHeader title={existing ? `Moment bewerken — ${skill?.name || ""}` : ` Nieuw ontwikkelmoment — ${skill?.name || ""}`} onClose={onClose} />
+      <ModalHeader title={existing ? `Moment bewerken, ${skill?.name || ""}` : ` Nieuw ontwikkelmoment, ${skill?.name || ""}`} onClose={onClose} />
       {skill && (
         <div className="subtle-box" style={{ display: "inline-flex", alignItems: "center", gap: "7px", marginBottom: "14px", padding: "5px 11px" }}>
           <span className="dot" style={{ width: "8px", height: "8px", background: skill.color }} />
@@ -745,30 +749,160 @@ function CompleteProjectModal({ projectKey, onClose }: { projectKey: string; onC
       </p>
       <button
         className="btn btn-primary"
-        style={{ width: "100%", justifyContent: "flex-start", marginBottom: "10px", padding: "12px 14px" }}
+        style={{
+          display: "block",
+          width: "100%",
+          boxSizing: "border-box",
+          textAlign: "left",
+          marginBottom: "10px",
+          padding: "12px 14px",
+        }}
         onClick={handleKeep}
       >
-        <AppIcon name="check" size="sm" strokeWidth={2.5} />
-        <span style={{ marginLeft: "8px", textAlign: "left", flex: 1, minWidth: 0 }}>
-          <span style={{ display: "block", fontWeight: "var(--fw-bold)" }}>Alles laten staan</span>
-          <span style={{ display: "block", fontSize: "var(--fs-xs)", fontWeight: "var(--fw-regular)", opacity: 0.85 }}>
-            Het project verschijnt bij "Afgeronde projecten", alle gegevens blijven bewaard.
-          </span>
+        <span style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "var(--fw-bold)" }}>
+          <AppIcon name="check" size="sm" strokeWidth={2.5} /> Alles laten staan
+        </span>
+        <span style={{ display: "block", fontSize: "var(--fs-xs)", fontWeight: "var(--fw-regular)", opacity: 0.85, marginTop: "3px" }}>
+          Het project verschijnt bij "Afgeronde projecten", alle gegevens blijven bewaard.
         </span>
       </button>
       <button
         className="btn-ghost"
-        style={{ width: "100%", justifyContent: "flex-start", padding: "12px 14px", color: "var(--danger)" }}
+        style={{
+          display: "block",
+          width: "100%",
+          boxSizing: "border-box",
+          textAlign: "left",
+          padding: "12px 14px",
+          color: "var(--danger)",
+        }}
         onClick={handleReset}
       >
-        <AppIcon name="trash" size="sm" />
-        <span style={{ marginLeft: "8px", textAlign: "left", flex: 1, minWidth: 0 }}>
-          <span style={{ display: "block", fontWeight: "var(--fw-bold)" }}>Project resetten</span>
-          <span style={{ display: "block", fontSize: "var(--fs-xs)", fontWeight: "var(--fw-regular)", opacity: 0.85 }}>
-            Alle ontwikkelmomenten en bewijsstukken worden verwijderd, het project gaat terug naar "nog niet gestart".
-          </span>
+        <span style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "var(--fw-bold)" }}>
+          <AppIcon name="trash" size="sm" /> Project resetten
+        </span>
+        <span style={{ display: "block", fontSize: "var(--fs-xs)", fontWeight: "var(--fw-regular)", opacity: 0.85, marginTop: "3px" }}>
+          Alle ontwikkelmomenten en bewijsstukken worden verwijderd, het project gaat terug naar "nog niet gestart".
         </span>
       </button>
+    </>
+  );
+}
+
+// ─── Photo Editor Modal (profielfoto: positie + vervangen) ─────────────────────
+function PhotoEditorModal({ onClose }: { onClose: () => void }) {
+  const ctx = useLogbookCtx();
+  const { state } = ctx;
+  const photoPos = state.profilePhotoPosition || { x: 50, y: 50 };
+
+  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        // Keep it small — this is stored inline in logbook-data.json.
+        const max = 320;
+        let w = img.width, h = img.height;
+        if (w > max || h > max) {
+          if (w > h) { h = Math.round(h * (max / w)); w = max; }
+          else { w = Math.round(w * (max / h)); h = max; }
+        }
+        const cv = document.createElement("canvas");
+        cv.width = w; cv.height = h;
+        cv.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        ctx.setProfilePhoto(cv.toDataURL("image/jpeg", 0.85));
+        ctx.setProfilePhotoPosition({ x: 50, y: 50 });
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  return (
+    <>
+      <ModalHeader title="Profielfoto" onClose={onClose} />
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: "18px" }}>
+        {state.profilePhoto ? (
+          <img
+            src={state.profilePhoto}
+            alt=""
+            className="profile-avatar-lg"
+            style={{ width: "96px", height: "96px", objectPosition: `${photoPos.x}% ${photoPos.y}%` }}
+          />
+        ) : (
+          <div className="profile-avatar-lg profile-avatar-lg-fallback" style={{ width: "96px", height: "96px" }}>
+            <AppIcon name="user" size="xl" />
+          </div>
+        )}
+      </div>
+
+      {state.profilePhoto && (
+        <div style={{ marginBottom: "18px" }}>
+          <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", marginBottom: "8px" }}>
+            Positionering van de foto
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", width: "58px", flexShrink: 0 }}>Horizontaal</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={photoPos.x}
+              style={{ flex: 1 }}
+              onChange={(e) => ctx.setProfilePhotoPosition({ ...photoPos, x: Number(e.target.value) })}
+            />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", width: "58px", flexShrink: 0 }}>Verticaal</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={photoPos.y}
+              style={{ flex: 1 }}
+              onChange={(e) => ctx.setProfilePhotoPosition({ ...photoPos, y: Number(e.target.value) })}
+            />
+          </div>
+        </div>
+      )}
+
+      <label
+        className="btn-ghost"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "6px",
+          width: "100%",
+          boxSizing: "border-box",
+          padding: "10px 14px",
+          cursor: "pointer",
+          marginBottom: "8px",
+        }}
+      >
+        <AppIcon name="camera" size="xs" /> {state.profilePhoto ? "Andere foto uploaden" : "Foto uploaden"}
+        <input type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
+      </label>
+      {state.profilePhoto && (
+        <button
+          className="btn-ghost"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            boxSizing: "border-box",
+            padding: "10px 14px",
+            color: "var(--danger)",
+          }}
+          onClick={() => { ctx.setProfilePhoto(null); onClose(); }}
+        >
+          Foto verwijderen
+        </button>
+      )}
     </>
   );
 }

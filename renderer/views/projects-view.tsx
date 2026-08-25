@@ -38,7 +38,7 @@ export function ProjectsView() {
                       )}
                     </div>
                     <div className="flex-center" style={{ gap: "16px", fontSize: "var(--fs-sm)", color: "var(--text-secondary)" }}>
-                      <span>{pe.length} ontwikkelmomenten</span>
+                      {idx < 5 && <span>{pe.length} ontwikkelmomenten</span>}
                       <span>{pl.length} bewijsstukken</span>
                     </div>
                   </div>

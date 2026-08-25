@@ -4,11 +4,12 @@
  * Register all IPC handlers here
  */
 
-import { ipcMain, dialog, shell } from "electron";
+import { app, ipcMain, dialog, shell } from "electron";
 
 import { appHandlers } from "./app.js";
 import { logbookStore, type LogbookData } from "../services/logbook-store.js";
 import { exportLogbookPdf, exportLogbookWord, SKILL_DEFS_BACKEND, LUK_DEFS_BACKEND } from "../services/pdf-export.js";
+import { checkForUpdate } from "../services/update-check.js";
 
 export function registerHandlers(): void {
   ipcMain.handle("app:getInfo", async (_event) => {
@@ -83,5 +84,12 @@ export function registerHandlers(): void {
     }
     await shell.openExternal(url);
     return { success: true };
+  });
+
+  // Checks GitHub Releases for a newer published version than the one
+  // currently running. Fails silently (returns null) on any network/parse
+  // error — the renderer simply doesn't show an update banner in that case.
+  ipcMain.handle("app:checkForUpdate", async () => {
+    return await checkForUpdate(app.getVersion());
   });
 }

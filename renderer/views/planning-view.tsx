@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
-import { pk, yearOfIndex, daysUntilLabel } from "../lib/use-logbook";
+import { pk, yearOfIndex, yearSuffix, daysUntilLabel } from "../lib/use-logbook";
 import { AppIcon } from "../components/AppIcon";
 import type { Deadline } from "../lib/types";
 
@@ -29,8 +29,9 @@ export function PlanningView() {
 
   const today = todayISO();
   const deadlines = state.deadlines || [];
-  const upcoming = deadlines.filter((d: Deadline) => d.date >= today).sort((a, b) => a.date.localeCompare(b.date));
-  const past = deadlines.filter((d: Deadline) => d.date < today).sort((a, b) => b.date.localeCompare(a.date));
+  const upcoming = deadlines.filter((d: Deadline) => !d.done && d.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+  const past = deadlines.filter((d: Deadline) => !d.done && d.date < today).sort((a, b) => b.date.localeCompare(a.date));
+  const done = deadlines.filter((d: Deadline) => d.done).sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div className="animate-fade-in">
@@ -80,7 +81,13 @@ export function PlanningView() {
       ) : (
         <div style={{ marginBottom: "24px" }}>
           {upcoming.map((d: Deadline) => (
-            <DeadlineRow key={d.id} deadline={d} onDelete={() => ctx.deleteDeadline(d.id)} />
+            <DeadlineRow
+              key={d.id}
+              deadline={d}
+              projNames={state.projNames}
+              onDelete={() => ctx.deleteDeadline(d.id)}
+              onToggleDone={() => ctx.toggleDeadlineDone(d.id)}
+            />
           ))}
         </div>
       )}
@@ -88,8 +95,32 @@ export function PlanningView() {
       {past.length > 0 && (
         <>
           <h2 className="section-title">Verlopen ({past.length})</h2>
-          {past.map((d: Deadline) => (
-            <DeadlineRow key={d.id} deadline={d} onDelete={() => ctx.deleteDeadline(d.id)} muted />
+          <div style={{ marginBottom: "24px" }}>
+            {past.map((d: Deadline) => (
+              <DeadlineRow
+                key={d.id}
+                deadline={d}
+                projNames={state.projNames}
+                onDelete={() => ctx.deleteDeadline(d.id)}
+                onToggleDone={() => ctx.toggleDeadlineDone(d.id)}
+                muted
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {done.length > 0 && (
+        <>
+          <h2 className="section-title">Afgerond ({done.length})</h2>
+          {done.map((d: Deadline) => (
+            <DeadlineRow
+              key={d.id}
+              deadline={d}
+              projNames={state.projNames}
+              onDelete={() => ctx.deleteDeadline(d.id)}
+              onToggleDone={() => ctx.toggleDeadlineDone(d.id)}
+            />
           ))}
         </>
       )}
@@ -97,7 +128,14 @@ export function PlanningView() {
   );
 }
 
-function DeadlineRow({ deadline, onDelete, muted }: { deadline: Deadline; onDelete: () => void; muted?: boolean }) {
+function DeadlineRow({ deadline, projNames, onDelete, onToggleDone, muted }: {
+  deadline: Deadline;
+  projNames: string[];
+  onDelete: () => void;
+  onToggleDone: () => void;
+  muted?: boolean;
+}) {
+  const isDone = !!deadline.done;
   return (
     <div
       className="card-sm"
@@ -111,15 +149,45 @@ function DeadlineRow({ deadline, onDelete, muted }: { deadline: Deadline; onDele
       }}
     >
       <div className="dot-row" style={{ gap: "10px", minWidth: 0 }}>
-        <AppIcon name="planning" size="sm" />
+        <button
+          className="btn-icon"
+          style={{
+            flexShrink: 0,
+            width: "22px",
+            height: "22px",
+            borderRadius: "50%",
+            border: `2px solid ${isDone ? "var(--pink)" : "var(--border-strong)"}`,
+            background: isDone ? "var(--pink)" : "none",
+            color: "#fff",
+            padding: "0",
+          }}
+          onClick={onToggleDone}
+          title={isDone ? "Markeer als niet afgerond" : "Markeer als afgerond"}
+        >
+          {isDone && <AppIcon name="check" size="xs" strokeWidth={3} />}
+        </button>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: "var(--fw-semibold)", fontSize: "var(--fs-base)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div
+            style={{
+              fontWeight: "var(--fw-semibold)",
+              fontSize: "var(--fs-base)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              textDecoration: isDone ? "line-through" : "none",
+              color: isDone ? "var(--text-tertiary)" : "var(--text-primary)",
+            }}
+          >
             {deadline.title}
           </div>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>
-            {deadline.date}{deadline.projectKey ? ` · ${deadline.projectKey}` : ""}
-            {" · "}
-            <span style={{ color: "var(--pink)", fontWeight: "var(--fw-semibold)" }}>{daysUntilLabel(deadline.date)}</span>
+            {deadline.date}{deadline.projectKey ? ` · ${deadline.projectKey}${yearSuffix(projNames, deadline.projectKey)}` : ""}
+            {!isDone && (
+              <>
+                {" · "}
+                <span style={{ color: "var(--pink)", fontWeight: "var(--fw-semibold)" }}>{daysUntilLabel(deadline.date)}</span>
+              </>
+            )}
           </div>
         </div>
       </div>

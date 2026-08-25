@@ -337,6 +337,13 @@ export function useLogbook() {
     }));
   }, [update]);
 
+  const toggleDeadlineDone = useCallback((id: string) => {
+    update((prev) => ({
+      ...prev,
+      deadlines: (prev.deadlines || []).map((d) => d.id === id ? { ...d, done: !d.done } : d),
+    }));
+  }, [update]);
+
   // ─── Reflectie ─────────────────────────────────────────────────────────────
   const addReflection = useCallback((reflection: Omit<Reflection, "id">) => {
     update((prev) => ({
@@ -478,6 +485,7 @@ export function useLogbook() {
     addDeadline,
     updateDeadline,
     deleteDeadline,
+    toggleDeadlineDone,
     addReflection,
     updateReflection,
     deleteReflection,
@@ -507,6 +515,26 @@ export function pk(projNames: string[], i: number): string {
 /** Which studiejaar a project slot (by its index in projNames) belongs to. */
 export function yearOfIndex(i: number): 1 | 2 {
   return i < 5 ? 1 : 2;
+}
+
+/**
+ * Which studiejaar a project *name* belongs to — for places that only have
+ * the stored key (e.g. Entry.periode, Deadline.projectKey), not the original
+ * index. Falls back to the first matching index, so this can be ambiguous
+ * if a Jaar 1 and Jaar 2 project happen to share the exact same name (e.g.
+ * both left at the default "Project 1") — a pre-existing quirk of keying
+ * data by name instead of index.
+ */
+export function yearOfProjectName(projNames: string[], name: string | undefined): 1 | 2 | null {
+  if (!name) return null;
+  const idx = projNames.indexOf(name);
+  return idx >= 0 ? yearOfIndex(idx) : null;
+}
+
+/** " (Jaar 1)" / " (Jaar 2)" suffix for a project name, or "" if unknown. */
+export function yearSuffix(projNames: string[], name: string | undefined): string {
+  const y = yearOfProjectName(projNames, name);
+  return y ? ` (Jaar ${y})` : "";
 }
 
 /** Days until an ISO date (negative if in the past, 0 if today). */

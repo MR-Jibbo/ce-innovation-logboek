@@ -15,3 +15,6 @@ Thumbs.db
 # Local env
 .env
 .env.local
+
+# Files moved aside pending manual deletion (see git history/chat for why)
+_to_delete/
