@@ -280,6 +280,12 @@ body {
   border-left: 3px solid transparent;
   font-family: inherit;
 }
+/* The icon must never shrink to make room for the label — without this, a
+   bigger Instellingen → Lettergrootte setting (which grows the label text
+   inside this fixed-width sidebar) squeezes the flex item and visibly
+   shrinks the icon instead. The label truncates with an ellipsis if needed. */
+.sb-btn svg { flex-shrink: 0; }
+.sb-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .sb-btn:hover { background: var(--sidebar-hover); color: var(--sidebar-text-hover); }
 .sb-btn.active {
   background: var(--sidebar-active-bg);
@@ -1084,7 +1090,7 @@ textarea.input { resize: vertical; line-height: 1.5; }
    size regardless of the Instellingen → Lettergrootte setting. */
 .splash-tagline {
   font-family: "Courier New", Courier, monospace;
-  font-size: 16px;
+  font-size: 18px;
   color: var(--text-secondary);
 }
 .splash-tagline .accent { color: #ff6b4a; }

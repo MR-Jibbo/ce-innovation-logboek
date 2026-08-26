@@ -125,7 +125,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
           <img
             src={studioBeeftinkLogo}
             alt=""
-            style={{ width: "72px", height: "auto", opacity: 0.9 }}
+            style={{ width: "84px", height: "auto", opacity: 0.9 }}
           />
           <p className="splash-tagline">
             Een <span className="accent">Studio Beeftink</span> product
