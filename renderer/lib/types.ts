@@ -55,6 +55,10 @@ export interface Entry {
   id: string;
   skillId: string;
   title: string;
+  /** Stable project-slot key ("0".."8", the project's index in projNames —
+   *  see keyOfIndex/indexOfKey in use-logbook.ts), NOT the display name.
+   *  Two projects in different years can share a display name, so the name
+   *  itself can't be used as a unique key. */
   periode: string;
   date: string;
   description: string;
@@ -75,6 +79,7 @@ export interface LukEntry {
   id: string;
   lukId: string;
   criterionId: string;
+  /** Stable project-slot key ("0".."8") — see the note on Entry.periode. */
   periode: string;
   title?: string;
   text: string;
@@ -103,6 +108,7 @@ export interface Deadline {
   id: string;
   title: string;
   date: string; // ISO yyyy-mm-dd
+  /** Stable project-slot key ("0".."8") — see the note on Entry.periode. */
   projectKey?: string;
   done?: boolean;
 }

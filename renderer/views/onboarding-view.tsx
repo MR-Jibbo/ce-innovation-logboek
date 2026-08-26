@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
+import { pk } from "../lib/use-logbook";
 import { ALL_SKILLS, LUK_DEFS } from "../lib/constants";
 import { AppIcon } from "../components/AppIcon";
 
@@ -13,14 +14,13 @@ export function OnboardingView() {
   const [tl, setTl] = useState<string[]>((() => {
     const existing = [...(state.lukSelections[key] || [])];
     if (existing.length) return existing;
-    const idx = state.projNames.indexOf(key);
-    const def = LUK_DEFS.find((l) => l.dp === ["Project 1", "Project 2", "Project 3", "Project 4", "Vrije Ruimte"][idx % 5]);
+    const def = LUK_DEFS.find((l) => l.dp === ["Project 1", "Project 2", "Project 3", "Project 4", "Vrije Ruimte"][state.projIdx % 5]);
     return def ? [def.id] : [];
   })());
 
   return (
     <div className="animate-fade-in">
-      <h1 className="page-title">{key}</h1>
+      <h1 className="page-title">{pk(state.projNames, state.projIdx)}</h1>
 
       {hasSkills && (
         <div className="flex-center" style={{ gap: "10px", marginBottom: "24px" }}>

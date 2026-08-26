@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
-import { pk, yearOfIndex, yearSuffix, daysUntilLabel } from "../lib/use-logbook";
+import { pk, keyOfIndex, indexOfKey, yearOfIndex, yearSuffix, daysUntilLabel } from "../lib/use-logbook";
 import { AppIcon } from "../components/AppIcon";
 import type { Deadline } from "../lib/types";
 
@@ -64,7 +64,7 @@ export function PlanningView() {
           >
             <option value="">Geen specifiek project</option>
             {projectOptions.map(({ idx, name }) => (
-              <option key={name} value={name}>{name} (Jaar {yearOfIndex(idx)})</option>
+              <option key={idx} value={keyOfIndex(idx)}>{name} (Jaar {yearOfIndex(idx)})</option>
             ))}
           </select>
           <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={handleAdd}>
@@ -181,7 +181,7 @@ function DeadlineRow({ deadline, projNames, onDelete, onToggleDone, muted }: {
             {deadline.title}
           </div>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>
-            {deadline.date}{deadline.projectKey ? ` · ${deadline.projectKey}${yearSuffix(projNames, deadline.projectKey)}` : ""}
+            {deadline.date}{deadline.projectKey ? ` · ${pk(projNames, indexOfKey(deadline.projectKey))}${yearSuffix(deadline.projectKey)}` : ""}
             {!isDone && (
               <>
                 {" · "}

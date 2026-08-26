@@ -1,5 +1,5 @@
 import { useLogbookCtx } from "../lib/logbook-context";
-import { pk } from "../lib/use-logbook";
+import { pk, keyOfIndex } from "../lib/use-logbook";
 import { YEAR_GROUPS, PROJ_COLORS } from "../lib/constants";
 import type { Entry, LukEntry } from "../lib/types";
 
@@ -19,10 +19,11 @@ export function ProjectsView() {
             <div className="grid-2">
               {indices.map((idx) => {
                 const nm = pk(state.projNames, idx);
-                const pe = state.entries.filter((e: Entry) => e.periode === nm);
-                const pl = state.lukEntries.filter((e: LukEntry) => e.periode === nm);
-                const onboarded = state.projOnboarded[nm];
-                const completed = state.completedProjects.includes(nm);
+                const pid = keyOfIndex(idx);
+                const pe = state.entries.filter((e: Entry) => e.periode === pid);
+                const pl = state.lukEntries.filter((e: LukEntry) => e.periode === pid);
+                const onboarded = state.projOnboarded[pid];
+                const completed = state.completedProjects.includes(pid);
                 return (
                   <div
                     key={idx}

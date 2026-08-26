@@ -218,11 +218,8 @@ body {
   flex-direction: column;
   justify-content: center;
   border-bottom: 1px solid var(--sidebar-border);
-  cursor: pointer;
-  transition: opacity var(--dur-fast) var(--ease-out);
   flex-shrink: 0;
 }
-.sb-brand:hover { opacity: 0.82; }
 .sb-brand-title { font-size: var(--fs-md); font-weight: var(--fw-heavy); color: #fff; line-height: 1.2; }
 .sb-brand-sub {
   font-size: var(--fs-xs);
@@ -1104,3 +1101,34 @@ textarea.input { resize: vertical; line-height: 1.5; }
 }
 /* HAN rood, uit de officiële huisstijl-kleurkaart. */
 .splash-appname .accent { color: #e50056; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Easter egg — vijf keer op "Innovation Logboek" binnen 5 seconden
+   ═══════════════════════════════════════════════════════════════════════════ */
+.easter-egg-fish-layer {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 9999;
+}
+.easter-egg-fish-wrap {
+  position: absolute;
+  bottom: 0;
+  animation-name: fish-trampoline;
+  animation-duration: var(--fish-duration, 1s);
+  animation-delay: var(--fish-delay, 0s);
+  animation-timing-function: cubic-bezier(0.33, 0, 0.2, 1);
+  animation-iteration-count: infinite;
+}
+.easter-egg-fish {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+@keyframes fish-trampoline {
+  0% { transform: translateY(0) rotate(-6deg); }
+  45% { transform: translateY(calc(-1 * var(--fish-height, 55vh))) rotate(10deg); }
+  55% { transform: translateY(calc(-1 * var(--fish-height, 55vh))) rotate(-4deg); }
+  100% { transform: translateY(0) rotate(-6deg); }
+}

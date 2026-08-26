@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { LogbookCtx, useLogbookCtx } from "../lib/logbook-context";
 import { useLogbook, yearOfIndex } from "../lib/use-logbook";
 import { tipOfTheDay } from "../lib/constants";
@@ -17,6 +17,7 @@ import { ProfileView } from "../views/profile-view";
 import { ModalRenderer } from "../views/modal-renderer";
 import { AppIcon, type IconName } from "../components/AppIcon";
 import studioBeeftinkLogo from "../assets/studio-beeftink-logo.png";
+import easterEggFish from "../assets/easter-egg-fish.png";
 import type { LogbookContext } from "../lib/use-logbook";
 import type { ViewName } from "../lib/types";
 
@@ -147,6 +148,24 @@ export function HomeView() {
   const logbook = useLogbook();
   const [splashDone, setSplashDone] = useState(false);
 
+  // Easter egg: 5 clicks on the sidebar brand within 5 seconds triggers a
+  // trampolining-fish effect for 5 seconds. Declared above the early
+  // returns below (setup/splash) so the hooks always run in the same
+  // order regardless of which screen is showing.
+  const [eggActive, setEggActive] = useState(false);
+  const brandClickTimes = useRef<number[]>([]);
+  const eggTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleBrandClick = () => {
+    const now = Date.now();
+    brandClickTimes.current = [...brandClickTimes.current.filter((t) => now - t < 5000), now];
+    if (brandClickTimes.current.length >= 5) {
+      brandClickTimes.current = [];
+      if (eggTimer.current) clearTimeout(eggTimer.current);
+      setEggActive(true);
+      eggTimer.current = setTimeout(() => setEggActive(false), 5000);
+    }
+  };
+
   if (!splashDone || !logbook.loaded) {
     return <SplashScreen onDone={() => setSplashDone(true)} />;
   }
@@ -162,8 +181,8 @@ export function HomeView() {
   const { state } = logbook;
   const curYearLabel = ` (Jaar ${yearOfIndex(state.projIdx)})`;
   let topbarTitle = "Dashboard";
-  if (state.view === "proj-settings") topbarTitle = `Projectinstellingen, ${logbook.cur()}${curYearLabel}`;
-  else if (state.view === "project") topbarTitle = `${logbook.cur()}${curYearLabel}`;
+  if (state.view === "proj-settings") topbarTitle = `Projectinstellingen, ${logbook.curName()}${curYearLabel}`;
+  else if (state.view === "project") topbarTitle = `${logbook.curName()}${curYearLabel}`;
   else if (state.view === "projects") topbarTitle = "Projecten";
   else if (state.view === "moments") topbarTitle = "Ontwikkelmomenten";
   else if (state.view === "bewijsstukken") topbarTitle = "Bewijsstukken";
@@ -178,12 +197,10 @@ export function HomeView() {
   return (
     <LogbookCtx.Provider value={logbook}>
       <div className="app">
+        {eggActive && <FishTrampoline />}
         {/* Sidebar */}
         <div className="sidebar">
-          <div
-            className="sb-brand"
-            onClick={() => logbook.navigate("home")}
-          >
+          <div className="sb-brand" onClick={handleBrandClick}>
             <div className="sb-brand-title">Innovation</div>
             <div className="sb-brand-sub">Logboek</div>
           </div>
@@ -305,6 +322,50 @@ export function HomeView() {
         <ModalRenderer />
       </div>
     </LogbookCtx.Provider>
+  );
+}
+
+const EASTER_EGG_FISH_COUNT = 12;
+
+/** Easter egg: a handful of fish trampolining up from the bottom of the app for 5 seconds. */
+function FishTrampoline() {
+  const fish = useMemo(
+    () =>
+      Array.from({ length: EASTER_EGG_FISH_COUNT }, () => ({
+        left: Math.random() * 92,
+        size: 40 + Math.random() * 36,
+        duration: 0.7 + Math.random() * 0.6,
+        delay: Math.random() * 0.8,
+        height: 45 + Math.random() * 35,
+        flip: Math.random() < 0.5,
+      })),
+    [],
+  );
+
+  return (
+    <div className="easter-egg-fish-layer">
+      {fish.map((f, i) => (
+        <div
+          key={i}
+          className="easter-egg-fish-wrap"
+          style={{
+            left: `${f.left}%`,
+            width: `${f.size}px`,
+            // @ts-expect-error custom properties consumed by the CSS animation
+            "--fish-height": `${f.height}vh`,
+            "--fish-duration": `${f.duration}s`,
+            "--fish-delay": `${f.delay}s`,
+          }}
+        >
+          <img
+            src={easterEggFish}
+            alt=""
+            className="easter-egg-fish"
+            style={{ transform: f.flip ? "scaleX(-1)" : undefined }}
+          />
+        </div>
+      ))}
+    </div>
   );
 }
 

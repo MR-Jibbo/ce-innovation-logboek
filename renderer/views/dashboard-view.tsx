@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
-import { getGreeting, pk, yearOfIndex, yearSuffix, daysUntilLabel } from "../lib/use-logbook";
+import { getGreeting, pk, keyOfIndex, indexOfKey, yearOfIndex, yearSuffix, daysUntilLabel } from "../lib/use-logbook";
 import { ALL_SKILLS, PROJ_COLORS, LUK_DEFS } from "../lib/constants";
 import { AppIcon } from "../components/AppIcon";
 import type { Entry, LukEntry, Deadline } from "../lib/types";
@@ -29,21 +29,21 @@ export function DashboardView() {
   const [recentExpanded, setRecentExpanded] = useState(false);
 
   const allVisibleIndices = [...showJaar1, ...showJaar2].filter((idx, i, arr) => arr.indexOf(idx) === i);
-  const allVisibleKeys = allVisibleIndices.map((i) => pk(state.projNames, i));
+  const allVisibleKeys = allVisibleIndices.map((i) => keyOfIndex(i));
 
   // Mijn projecten: alle geselecteerde/zichtbare projecten uit de instellingen.
   const mijnProjecten = allVisibleIndices.map((idx) => ({ idx, name: pk(state.projNames, idx) }));
 
   // Gestarte projecten: onboarded, maar nog niet afgerond.
   const gestarteProjecten = mijnProjecten.filter(
-    ({ name }) => state.projOnboarded[name] && !state.completedProjects.includes(name),
+    ({ idx }) => state.projOnboarded[keyOfIndex(idx)] && !state.completedProjects.includes(keyOfIndex(idx)),
   );
 
   // Afgeronde projecten: via de "Afronden"-knop op een project — en alleen
   // als het project nog zichtbaar/geselecteerd staat (anders verdwijnt het
   // hier ook als je het in je Profiel/Instellingen hebt uitgezet).
   const afgerondeProjecten = state.completedProjects
-    .map((name) => ({ idx: state.projNames.indexOf(name), name }))
+    .map((key) => ({ idx: indexOfKey(key), name: pk(state.projNames, indexOfKey(key)) }))
     .filter(({ idx }) => allVisibleIndices.includes(idx));
 
   const relEntries = state.entries.filter((e: Entry) => allVisibleKeys.includes(e.periode));
@@ -155,7 +155,7 @@ export function DashboardView() {
                       <div className="flex-between">
                         <span style={{ fontSize: "var(--fs-sm)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{e.title}</span>
                         <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", flexShrink: 0 }}>
-                          {e.periode}{yearSuffix(state.projNames, e.periode)}
+                          {pk(state.projNames, indexOfKey(e.periode))}{yearSuffix(e.periode)}
                         </span>
                       </div>
                     </button>
@@ -197,7 +197,7 @@ export function DashboardView() {
                       <div className="flex-between">
                         <span style={{ fontSize: "var(--fs-sm)" }}>{d.title}</span>
                         <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", textAlign: "right" }}>
-                          {d.date}{d.projectKey ? ` · ${d.projectKey}${yearSuffix(state.projNames, d.projectKey)}` : ""}
+                          {d.date}{d.projectKey ? ` · ${pk(state.projNames, indexOfKey(d.projectKey))}${yearSuffix(d.projectKey)}` : ""}
                           <br />
                           <span style={{ color: "var(--pink)", fontWeight: "var(--fw-semibold)" }}>{daysUntilLabel(d.date)}</span>
                         </span>
@@ -239,11 +239,11 @@ function ProjectListColumn({
           </p>
         ) : (
           items.map(({ idx, name }) => {
-            const pl = state.lukEntries.filter((e: LukEntry) => e.periode === name);
+            const pl = state.lukEntries.filter((e: LukEntry) => e.periode === keyOfIndex(idx));
             const colorIdx = idx >= 0 ? idx : 0;
             return (
               <button
-                key={name}
+                key={idx}
                 className="entry-row"
                 style={{ width: "100%", border: "none", boxShadow: "none", background: "none" }}
                 onClick={() => onClick(idx)}

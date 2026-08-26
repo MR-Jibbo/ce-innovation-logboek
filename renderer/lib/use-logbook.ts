@@ -33,6 +33,9 @@ interface BackendData {
   profilePhotoPosition?: ProfilePhotoPosition;
 }
 
+/** BackendData with every optional field defaulted — the shape used once loaded data has been normalized. */
+type NormalizedBackendData = Required<BackendData>;
+
 const DEFAULT_STATE: AppState = {
   view: "setup",
   projIdx: 0,
@@ -76,28 +79,39 @@ export function useLogbook() {
           return;
         }
         setDataFolderState(folder);
-        const data = await window.glazeAPI.glaze.ipc.invoke("logbook:load") as BackendData;
-        const hasStudent = data.studentName && data.studentName.trim().length > 0;
+        const raw = await window.glazeAPI.glaze.ipc.invoke("logbook:load") as BackendData;
+        const hasStudent = raw.studentName && raw.studentName.trim().length > 0;
+        const normalized: NormalizedBackendData = {
+          projNames: raw.projNames?.length ? raw.projNames : [...DEFAULT_PROJ_NAMES],
+          studentName: raw.studentName || "",
+          studieJaar: raw.studieJaar || 1,
+          visibleProjects: raw.visibleProjects,
+          projOnboarded: raw.projOnboarded || {},
+          completedProjects: raw.completedProjects || [],
+          selectedSkillIds: raw.selectedSkillIds || {},
+          lukSelections: raw.lukSelections || {},
+          skillData: raw.skillData || {},
+          entries: raw.entries || [],
+          lukEntries: raw.lukEntries || [],
+          openYears: raw.openYears || { jaar1: true, jaar2: false },
+          deadlines: raw.deadlines || [],
+          reflections: raw.reflections || [],
+          profilePhoto: raw.profilePhoto || null,
+          profilePhotoPosition: raw.profilePhotoPosition || { x: 50, y: 50 },
+        };
+        const { data, changed } = migrateProjectKeys(normalized);
         setState({
           view: hasStudent ? "home" : "setup",
           projIdx: 0,
-          studentName: data.studentName || "",
-          studieJaar: data.studieJaar || 1,
-          visibleProjects: data.visibleProjects,
-          projNames: data.projNames?.length ? data.projNames : [...DEFAULT_PROJ_NAMES],
-          projOnboarded: data.projOnboarded || {},
-          completedProjects: data.completedProjects || [],
-          selectedSkillIds: data.selectedSkillIds || {},
-          lukSelections: data.lukSelections || {},
-          skillData: data.skillData || {},
-          entries: data.entries || [],
-          lukEntries: data.lukEntries || [],
-          openYears: data.openYears || { jaar1: true, jaar2: false },
-          deadlines: data.deadlines || [],
-          reflections: data.reflections || [],
-          profilePhoto: data.profilePhoto || null,
-          profilePhotoPosition: data.profilePhotoPosition || { x: 50, y: 50 },
+          ...data,
         });
+        if (changed) {
+          // Persist the migrated (index-based) keys right away, so the fix
+          // survives even if the user closes the app before their next edit.
+          window.glazeAPI.glaze.ipc.invoke("logbook:save", data).catch((e) =>
+            console.error("Failed to persist project-key migration:", e),
+          );
+        }
         setSetupStep("profile");
       } catch (e) {
         console.error("Failed to load logbook data:", e);
@@ -176,8 +190,17 @@ export function useLogbook() {
     }));
   }, [update]);
 
+  /**
+   * The stable storage key ("0".."8") of the currently open project — used
+   * for entries/lukEntries/skillData/etc. Use curName() for display text.
+   */
   const cur = useCallback(() => {
-    return state.projNames[state.projIdx] || `Project ${state.projIdx + 1}`;
+    return keyOfIndex(state.projIdx);
+  }, [state.projIdx]);
+
+  /** The display name of the currently open project (e.g. "Project 1"). */
+  const curName = useCallback(() => {
+    return pk(state.projNames, state.projIdx);
   }, [state.projNames, state.projIdx]);
 
   // ─── Setup ───────────────────────────────────────────────────────────────
@@ -215,31 +238,23 @@ export function useLogbook() {
   }, [update]);
 
   // ─── Project settings ─────────────────────────────────────────────────────
-  const saveProjectSettings = useCallback((oldKey: string, newKey: string, skillIds: string[], lukIds: string[]) => {
+  /**
+   * `idx` is the project's stable slot index — renaming a project only ever
+   * changes projNames[idx]; all keyed data (skills/LUKs/entries/...) already
+   * lives under the stable key(idx), so there is nothing to migrate.
+   */
+  const saveProjectSettings = useCallback((idx: number, newName: string, skillIds: string[], lukIds: string[]) => {
+    const key = keyOfIndex(idx);
     update((prev) => {
       const next = { ...prev };
-      const idx = next.projNames.indexOf(oldKey);
-      const renamed = newKey !== oldKey;
-      if (idx >= 0 && renamed) {
+      const trimmed = newName.trim();
+      if (trimmed && trimmed !== next.projNames[idx]) {
         next.projNames = [...next.projNames];
-        next.projNames[idx] = newKey;
-        // Migrate all keyed data
-        for (const field of ["selectedSkillIds", "lukSelections", "skillData"] as const) {
-          if ((next[field] as Record<string, unknown>)[oldKey]) {
-            (next[field] as Record<string, unknown>)[newKey] = (next[field] as Record<string, unknown>)[oldKey];
-            delete (next[field] as Record<string, unknown>)[oldKey];
-          }
-        }
-        if (next.projOnboarded[oldKey]) {
-          next.projOnboarded = { ...next.projOnboarded, [newKey]: next.projOnboarded[oldKey] };
-          delete next.projOnboarded[oldKey];
-        }
-        next.entries = next.entries.map((e) => e.periode === oldKey ? { ...e, periode: newKey } : e);
-        next.lukEntries = next.lukEntries.map((e) => e.periode === oldKey ? { ...e, periode: newKey } : e);
+        next.projNames[idx] = trimmed;
       }
-      next.selectedSkillIds = { ...next.selectedSkillIds, [newKey]: skillIds };
-      next.lukSelections = { ...next.lukSelections, [newKey]: lukIds };
-      next.projOnboarded = { ...next.projOnboarded, [newKey]: true };
+      next.selectedSkillIds = { ...next.selectedSkillIds, [key]: skillIds };
+      next.lukSelections = { ...next.lukSelections, [key]: lukIds };
+      next.projOnboarded = { ...next.projOnboarded, [key]: true };
       return next;
     });
   }, [update]);
@@ -472,6 +487,7 @@ export function useLogbook() {
     loaded,
     navigate,
     cur,
+    curName,
     completeSetup,
     completeOnboarding,
     saveSettings,
@@ -510,8 +526,29 @@ export function useLogbook() {
 export type LogbookContext = ReturnType<typeof useLogbook>;
 
 // Helper functions
+
+/** Display name of a project slot, by its index in projNames. */
 export function pk(projNames: string[], i: number): string {
   return projNames[i] || `Project ${i + 1}`;
+}
+
+/**
+ * The stable storage key for a project slot — used for Entry.periode,
+ * LukEntry.periode, Deadline.projectKey, and as the Record key in
+ * projOnboarded/selectedSkillIds/lukSelections/skillData/completedProjects.
+ * Deliberately index-based (not the display name): two projects in
+ * different years can share a display name (e.g. both left at the default
+ * "Project 1"), and a name can change via Projectinstellingen, but the
+ * slot's index never does.
+ */
+export function keyOfIndex(i: number): string {
+  return String(i);
+}
+
+/** Reverse of keyOfIndex — parses a stable storage key back to its index, or -1 if invalid/unset. */
+export function indexOfKey(key: string | undefined | null): number {
+  if (!key || !/^\d+$/.test(key)) return -1;
+  return parseInt(key, 10);
 }
 
 /** Which studiejaar a project slot (by its index in projNames) belongs to. */
@@ -519,24 +556,50 @@ export function yearOfIndex(i: number): 1 | 2 {
   return i < 5 ? 1 : 2;
 }
 
-/**
- * Which studiejaar a project *name* belongs to — for places that only have
- * the stored key (e.g. Entry.periode, Deadline.projectKey), not the original
- * index. Falls back to the first matching index, so this can be ambiguous
- * if a Jaar 1 and Jaar 2 project happen to share the exact same name (e.g.
- * both left at the default "Project 1") — a pre-existing quirk of keying
- * data by name instead of index.
- */
-export function yearOfProjectName(projNames: string[], name: string | undefined): 1 | 2 | null {
-  if (!name) return null;
-  const idx = projNames.indexOf(name);
-  return idx >= 0 ? yearOfIndex(idx) : null;
+/** " (Jaar 1)" / " (Jaar 2)" suffix for a stored project key, or "" if unset/invalid. */
+export function yearSuffix(key: string | undefined): string {
+  const idx = indexOfKey(key);
+  return idx >= 0 ? ` (Jaar ${yearOfIndex(idx)})` : "";
 }
 
-/** " (Jaar 1)" / " (Jaar 2)" suffix for a project name, or "" if unknown. */
-export function yearSuffix(projNames: string[], name: string | undefined): string {
-  const y = yearOfProjectName(projNames, name);
-  return y ? ` (Jaar ${y})` : "";
+/**
+ * Migrates legacy data that was keyed by project DISPLAY NAME (the format
+ * used before this fix) to the stable index-based key. Old name-keying
+ * meant a Jaar 1 and Jaar 2 project sharing a name (e.g. both still named
+ * "Project 1") collided: a bewijsstuk logged under one showed up under the
+ * other too. Ambiguous legacy names resolve to their first matching index
+ * (i.e. the Jaar 1 slot) — the original index can't be recovered since it
+ * was never stored. Idempotent: already-migrated keys don't match any
+ * project name and pass through unchanged, so this is safe to run on
+ * every load.
+ */
+export function migrateProjectKeys(data: NormalizedBackendData): { data: NormalizedBackendData; changed: boolean } {
+  const projNames = data.projNames?.length ? data.projNames : DEFAULT_PROJ_NAMES;
+  let changed = false;
+  const resolve = (name: string): string => {
+    const idx = projNames.indexOf(name);
+    if (idx < 0) return name;
+    changed = true;
+    return keyOfIndex(idx);
+  };
+  const remapRecord = <T,>(rec: Record<string, T>): Record<string, T> => {
+    const out: Record<string, T> = {};
+    for (const [k, v] of Object.entries(rec)) out[resolve(k)] = v;
+    return out;
+  };
+
+  const next: NormalizedBackendData = {
+    ...data,
+    projOnboarded: remapRecord(data.projOnboarded),
+    selectedSkillIds: remapRecord(data.selectedSkillIds),
+    lukSelections: remapRecord(data.lukSelections),
+    skillData: remapRecord(data.skillData),
+    completedProjects: (data.completedProjects || []).map(resolve),
+    entries: data.entries.map((e) => (e.periode ? { ...e, periode: resolve(e.periode) } : e)),
+    lukEntries: data.lukEntries.map((e) => (e.periode ? { ...e, periode: resolve(e.periode) } : e)),
+    deadlines: (data.deadlines || []).map((d) => (d.projectKey ? { ...d, projectKey: resolve(d.projectKey) } : d)),
+  };
+  return { data: next, changed };
 }
 
 /** Days until an ISO date (negative if in the past, 0 if today). */

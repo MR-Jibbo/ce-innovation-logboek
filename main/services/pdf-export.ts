@@ -83,6 +83,12 @@ function formatExportDate(d: Date): string {
   return d.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
 }
 
+/** Resolves a project's display name from its stable index-based storage key ("0".."8"). */
+function resolveProjectName(data: LogbookData, projectKey: string): string {
+  const idx = Number(projectKey);
+  return (Number.isInteger(idx) ? data.projNames[idx] : undefined) || projectKey;
+}
+
 // ─── Export data model ──────────────────────────────────────────────────────
 // One shared shape built once from the raw logbook data, then rendered into
 // either the PDF's HTML or the Word document — so the two formats can never
@@ -129,7 +135,8 @@ interface AttachmentInfo {
 }
 
 interface ExportModel {
-  projectKey: string;
+  /** Display name of the project (resolved from its stable index-based storage key). */
+  projectName: string;
   studentName: string;
   exportDateLabel: string;
   skills: SkillSection[];
@@ -137,6 +144,12 @@ interface ExportModel {
   attachments: AttachmentInfo[];
 }
 
+/**
+ * `projectKey` is the project's stable storage key ("0".."8", its index in
+ * projNames — see keyOfIndex/indexOfKey in renderer/lib/use-logbook.ts),
+ * used to filter entries/lukEntries/selections. The display name shown on
+ * the cover page etc. is resolved separately via projNames.
+ */
 function buildExportModel(data: LogbookData, allSkills: SkillDef[], lukDefs: LukDef[], projectKey: string): ExportModel {
   const psi = data.selectedSkillIds[projectKey] || [];
   const chosenSkills = allSkills.filter((s) => psi.includes(s.id));
@@ -189,7 +202,7 @@ function buildExportModel(data: LogbookData, allSkills: SkillDef[], lukDefs: Luk
   attachments.sort((a, b) => a.file.name.localeCompare(b.file.name, "nl", { sensitivity: "base" }));
 
   return {
-    projectKey,
+    projectName: resolveProjectName(data, projectKey),
     studentName: data.studentName || "-",
     exportDateLabel: formatExportDate(new Date()),
     skills,
@@ -204,7 +217,7 @@ function coverHtml(model: ExportModel): string {
   return `
     <div class="cover">
       <p class="cover-kicker">Logboek</p>
-      <h1 class="cover-title">${escapeHtml(model.projectKey)}</h1>
+      <h1 class="cover-title">${escapeHtml(model.projectName)}</h1>
       <table class="cover-meta">
         <tr><td>Student</td><td>${escapeHtml(model.studentName)}</td></tr>
         <tr><td>Geëxporteerd op</td><td>${escapeHtml(model.exportDateLabel)}</td></tr>
@@ -341,11 +354,14 @@ async function attachmentsSectionHtml(model: ExportModel): Promise<string> {
 
 async function buildBody(data: LogbookData, allSkills: SkillDef[], lukDefs: LukDef[], projectKey: string): Promise<string> {
   const model = buildExportModel(data, allSkills, lukDefs, projectKey);
+  const pageBreak = `<div class="page-break"></div>`;
   return (
     coverHtml(model) +
     tocHtml(model) +
     skillsSectionHtml(model) +
+    pageBreak +
     lukSectionHtml(model) +
+    pageBreak +
     (await attachmentsSectionHtml(model))
   );
 }
@@ -387,7 +403,7 @@ export async function exportLogbookPdf(
   lukDefs: LukDef[],
   projectKey: string,
 ): Promise<{ success: boolean; canceled: boolean; filePath?: string; error?: string }> {
-  const title = `Logboek_${projectKey}`;
+  const title = `Logboek_${resolveProjectName(data, projectKey)}`;
   const safeName = title.replace(/\s+/g, "_") + ".pdf";
 
   const result = await dialog.showSaveDialog({
@@ -497,7 +513,7 @@ async function buildWordDocument(
   // ── Voorblad ──
   children.push(
     new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 2400, after: 200 }, children: [new TextRun({ text: "LOGBOEK", bold: true, size: 30 })] }),
-    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 600 }, children: [new TextRun({ text: model.projectKey, size: 44, bold: true })] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 600 }, children: [new TextRun({ text: model.projectName, size: 44, bold: true })] }),
     new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Student: ${model.studentName}`, size: 22 })] }),
     new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Geëxporteerd op: ${model.exportDateLabel}`, size: 22 })] }),
     new Paragraph({ children: [new PageBreak()] }),
@@ -532,7 +548,8 @@ async function buildWordDocument(
     }
   });
 
-  // ── Leeruitkomsten ──
+  // ── Leeruitkomsten ── (eigen pagina)
+  children.push(new Paragraph({ children: [new PageBreak()] }));
   children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Leeruitkomsten")] }));
   if (!model.luks.length) children.push(italicParagraph("Geen leeruitkomsten geselecteerd voor dit project."));
   model.luks.forEach((l) => {
@@ -566,7 +583,8 @@ async function buildWordDocument(
     });
   });
 
-  // ── Bijlagen ──
+  // ── Bijlagen ── (eigen pagina)
+  children.push(new Paragraph({ children: [new PageBreak()] }));
   children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Bijlagen")] }));
   if (!model.attachments.length) {
     children.push(italicParagraph("Geen bijlagen geüpload."));
@@ -602,7 +620,7 @@ export async function exportLogbookWord(
   lukDefs: LukDef[],
   projectKey: string,
 ): Promise<{ success: boolean; canceled: boolean; filePath?: string; error?: string }> {
-  const title = `Logboek_${projectKey}`;
+  const title = `Logboek_${resolveProjectName(data, projectKey)}`;
   const safeName = title.replace(/\s+/g, "_") + ".docx";
 
   const result = await dialog.showSaveDialog({

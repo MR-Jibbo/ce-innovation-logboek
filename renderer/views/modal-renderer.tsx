@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type ReactNode } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
+import { pk, indexOfKey } from "../lib/use-logbook";
 import { ALL_SKILLS, LUK_DEFS, STATUS, uid } from "../lib/constants";
 import type { LukFile, StatusKey, ActionItem } from "../lib/types";
 import { AppIcon } from "../components/AppIcon";
@@ -297,6 +298,7 @@ function EntryFormModal({ skillId, periode, editId, onClose }: {
   const ctx = useLogbookCtx();
   const existing = editId ? ctx.state.entries.find((e) => e.id === editId) : null;
   const fixedP = periode || ctx.cur();
+  const fixedPName = pk(ctx.state.projNames, indexOfKey(fixedP));
   const skill = ALL_SKILLS.find((s) => s.id === (existing?.skillId || skillId));
 
   const [title, setTitle] = useState(existing?.title || "");
@@ -340,7 +342,7 @@ function EntryFormModal({ skillId, periode, editId, onClose }: {
       {skill && (
         <div className="subtle-box" style={{ display: "inline-flex", alignItems: "center", gap: "7px", marginBottom: "14px", padding: "5px 11px" }}>
           <span className="dot" style={{ width: "8px", height: "8px", background: skill.color }} />
-          <span style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-semibold)", color: "var(--text-primary)" }}>{skill.name} · {fixedP}</span>
+          <span style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-semibold)", color: "var(--text-primary)" }}>{skill.name} · {fixedPName}</span>
         </div>
       )}
       {/* Status buttons */}
@@ -615,29 +617,16 @@ function LukEntryFormModal({ lukId, criterionId, periode, editId, onClose }: {
   const [text, setText] = useState(existing?.text || "");
   const [files, setFiles] = useState<LukFile[]>(existing?.files ? existing.files.map((f) => ({ ...f })) : []);
 
+  // Bestanden (inclusief foto's) worden ongewijzigd opgeslagen — geen
+  // kwaliteitsverlies door verkleinen/hercomprimeren. De data staat lokaal
+  // op de computer van de student, dus bestandsgrootte is geen beperking
+  // zoals bij bijvoorbeeld cloudopslag.
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const today = new Date().toLocaleDateString("nl-NL", { day: "2-digit", month: "2-digit", year: "numeric" });
     Array.from(e.target.files || []).forEach((file) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
-        if (file.type.startsWith("image/")) {
-          const img = new Image();
-          img.onload = () => {
-            const max = 800;
-            let w = img.width, h = img.height;
-            if (w > max || h > max) {
-              if (w > h) { h = Math.round(h * (max / w)); w = max; }
-              else { w = Math.round(w * (max / h)); h = max; }
-            }
-            const cv = document.createElement("canvas");
-            cv.width = w; cv.height = h;
-            cv.getContext("2d")!.drawImage(img, 0, 0, w, h);
-            setFiles((prev) => [...prev, { id: uid("f"), name: file.name, type: file.type, dataUrl: cv.toDataURL("image/jpeg", 0.7), date: today }]);
-          };
-          img.src = ev.target?.result as string;
-        } else {
-          setFiles((prev) => [...prev, { id: uid("f"), name: file.name, type: file.type, dataUrl: ev.target?.result as string, date: today }]);
-        }
+        setFiles((prev) => [...prev, { id: uid("f"), name: file.name, type: file.type, dataUrl: ev.target?.result as string, date: today }]);
       };
       reader.readAsDataURL(file);
     });
@@ -749,6 +738,7 @@ function SkillIndicatorsModal({ skillId, onClose }: { skillId: string; onClose: 
 // ─── Complete Project Modal ──────────────────────────────────────────────────────
 function CompleteProjectModal({ projectKey, onClose }: { projectKey: string; onClose: () => void }) {
   const ctx = useLogbookCtx();
+  const displayName = pk(ctx.state.projNames, indexOfKey(projectKey));
 
   const handleKeep = () => {
     ctx.completeProject(projectKey);
@@ -758,14 +748,14 @@ function CompleteProjectModal({ projectKey, onClose }: { projectKey: string; onC
   const handleReset = () => {
     ctx.setModal({
       type: "confirm",
-      msg: `Weet je zeker dat je "${projectKey}" wilt resetten? Alle ontwikkelmomenten, bewijsstukken en instellingen van dit project worden verwijderd en het project gaat terug naar "nog niet gestart".`,
+      msg: `Weet je zeker dat je "${displayName}" wilt resetten? Alle ontwikkelmomenten, bewijsstukken en instellingen van dit project worden verwijderd en het project gaat terug naar "nog niet gestart".`,
       onOk: () => { ctx.resetProject(projectKey); ctx.setModal(null); },
     });
   };
 
   return (
     <>
-      <ModalHeader title={`"${projectKey}" afronden`} onClose={onClose} />
+      <ModalHeader title={`"${displayName}" afronden`} onClose={onClose} />
       <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", marginBottom: "18px", lineHeight: "1.6" }}>
         Wat wil je doen met de gegevens van dit project?
       </p>

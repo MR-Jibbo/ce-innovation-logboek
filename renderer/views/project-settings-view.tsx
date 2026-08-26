@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
+import { pk } from "../lib/use-logbook";
 import { ALL_SKILLS, LUK_DEFS } from "../lib/constants";
 import { AppIcon } from "../components/AppIcon";
 
@@ -7,8 +8,9 @@ export function ProjectSettingsView() {
   const ctx = useLogbookCtx();
   const { state } = ctx;
   const key = ctx.cur();
+  const displayName = pk(state.projNames, state.projIdx);
   const hasSkills = state.projIdx < 5;
-  const [tempName, setTempName] = useState(key);
+  const [tempName, setTempName] = useState(displayName);
   const [tempSkills, setTempSkills] = useState<string[]>([...(state.selectedSkillIds[key] || [])]);
   const [tempLuks, setTempLuks] = useState<string[]>([...(state.lukSelections[key] || [])]);
 
@@ -20,8 +22,8 @@ export function ProjectSettingsView() {
   };
 
   const handleSave = () => {
-    const newName = tempName.trim() || key;
-    ctx.saveProjectSettings(key, newName, tempSkills, tempLuks);
+    const newName = tempName.trim() || displayName;
+    ctx.saveProjectSettings(state.projIdx, newName, tempSkills, tempLuks);
     ctx.navigate("project");
   };
 
