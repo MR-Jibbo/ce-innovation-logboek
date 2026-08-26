@@ -171,6 +171,18 @@ body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Tekst in de app is niet selecteerbaar (voorkomt per ongeluk highlighten
+   bij klikken/slepen), maar velden waar de gebruiker zelf tekst intypt of
+   plakt blijven gewoon selecteerbaar/bewerkbaar. */
+input,
+textarea,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1115,20 +1127,15 @@ textarea.input { resize: vertical; line-height: 1.5; }
 .easter-egg-fish-wrap {
   position: absolute;
   bottom: 0;
-  animation-name: fish-trampoline;
-  animation-duration: var(--fish-duration, 1s);
-  animation-delay: var(--fish-delay, 0s);
-  animation-timing-function: cubic-bezier(0.33, 0, 0.2, 1);
-  animation-iteration-count: infinite;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  /* animation-name/duration/delay are set per-fish inline — each fish's
+     bounce-then-dive path is generated as its own @keyframes rule (see
+     FishTrampoline in home-view.tsx) so the number of hops, bounce height,
+     wobble and the final dive-off-screen can vary per fish. */
 }
 .easter-egg-fish {
   display: block;
   width: 100%;
   height: auto;
-}
-@keyframes fish-trampoline {
-  0% { transform: translateY(0) rotate(-6deg); }
-  45% { transform: translateY(calc(-1 * var(--fish-height, 55vh))) rotate(10deg); }
-  55% { transform: translateY(calc(-1 * var(--fish-height, 55vh))) rotate(-4deg); }
-  100% { transform: translateY(0) rotate(-6deg); }
 }

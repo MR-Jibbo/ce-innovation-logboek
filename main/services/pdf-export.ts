@@ -65,6 +65,32 @@ function isWordDocFile(file: LukFile): boolean {
   );
 }
 
+function isPdfFile(file: LukFile): boolean {
+  return file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+}
+
+/** Plain-text-ish files we can just decode and show as-is (not images, Word, or PDF). */
+function isPlainTextFile(file: LukFile): boolean {
+  if (file.type?.startsWith("text/")) return true;
+  if (file.type === "application/json") return true;
+  return /\.(txt|csv|md|markdown|json|log)$/i.test(file.name);
+}
+
+const TEXT_ATTACHMENT_MAX_CHARS = 20000;
+
+/** Caps very large text attachments so one bewijsstuk can't blow up the whole export. */
+function truncateText(text: string): string {
+  if (text.length <= TEXT_ATTACHMENT_MAX_CHARS) return text;
+  return text.slice(0, TEXT_ATTACHMENT_MAX_CHARS) + "\n\n… (bestand ingekort, open het originele bestand voor de volledige inhoud)";
+}
+
+/** Decodes a plain-text data URI as UTF-8 text, or null if it isn't a valid data URI. */
+function decodePlainText(dataUrl: string): string | null {
+  const parsed = parseDataUri(dataUrl);
+  if (!parsed) return null;
+  return parsed.buffer.toString("utf-8");
+}
+
 /** Runs the uploaded .docx through mammoth, returning simplified HTML (with images inlined as data URIs), or null on any failure. */
 async function extractDocxHtml(dataUrl: string): Promise<string | null> {
   const parsed = parseDataUri(dataUrl);
@@ -75,6 +101,37 @@ async function extractDocxHtml(dataUrl: string): Promise<string | null> {
     return result.value || null;
   } catch (error) {
     console.error(`[pdf-export] Kon Word-bijlage niet uitlezen: ${error}`);
+    return null;
+  }
+}
+
+/**
+ * Extracts the text content of an uploaded PDF, one entry per page, via
+ * pdfjs-dist's pure-JS text layer (no native canvas / rasterization
+ * dependency — layout/images inside the PDF are not reproduced, only text).
+ * Returns null on any failure, or a page-less/scanned PDF still returns an
+ * array of empty strings (caller decides how to treat "no text found").
+ */
+async function extractPdfText(dataUrl: string): Promise<string[] | null> {
+  const parsed = parseDataUri(dataUrl);
+  if (!parsed) return null;
+  try {
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const doc = await pdfjs.getDocument({
+      data: new Uint8Array(parsed.buffer),
+      disableFontFace: true,
+      useSystemFonts: true,
+    }).promise;
+    const pages: string[] = [];
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i);
+      const content = await page.getTextContent();
+      const text = content.items.map((it) => ("str" in it ? it.str : "")).join(" ").trim();
+      pages.push(text);
+    }
+    return pages;
+  } catch (error) {
+    console.error(`[pdf-export] Kon PDF-bijlage niet uitlezen: ${error}`);
     return null;
   }
 }
@@ -333,6 +390,24 @@ async function attachmentContentHtml(file: LukFile): Promise<string> {
     if (html) return `<div class="attachment-doc">${demoteHeadings(html)}</div>`;
     return `<p><em>Kon de tekst van dit Word-bestand niet automatisch uitlezen. Open het originele bestand voor de inhoud.</em></p>`;
   }
+  if (isPdfFile(file)) {
+    const pages = await extractPdfText(file.dataUrl);
+    if (pages && pages.some((p) => p)) {
+      return `<div class="attachment-doc">${pages
+        .map(
+          (p, i) =>
+            `<p class="lbl">Pagina ${i + 1}</p><p>${p ? escapeHtml(p) : "<em>(geen doorzoekbare tekst op deze pagina)</em>"}</p>`,
+        )
+        .join("")}</div>`;
+    }
+    return `<p><em>Kon de tekst van deze PDF niet automatisch uitlezen (mogelijk een scan zonder doorzoekbare tekst). Open het originele bestand voor de inhoud.</em></p>`;
+  }
+  if (isPlainTextFile(file)) {
+    const text = decodePlainText(file.dataUrl);
+    if (text != null) {
+      return `<pre class="attachment-text">${escapeHtml(truncateText(text))}</pre>`;
+    }
+  }
   return `<p><em>Bestandstype: ${escapeHtml(file.type || "onbekend")}. Dit bestandstype wordt niet automatisch weergegeven — open het originele bestand voor de inhoud.</em></p>`;
 }
 
@@ -390,6 +465,7 @@ function buildFullHtml(body: string, title: string): string {
     .toc a{text-decoration:none;color:#333;}
     .attachment-image{display:block;max-width:440px;max-height:600px;border:1px solid #ccc;border-radius:4px;margin:8pt 0;}
     .attachment-doc{border-left:3px solid #ddd;padding:2pt 14pt;margin:8pt 0;background:#fafafa;}
+    .attachment-text{white-space:pre-wrap;word-wrap:break-word;font-family:"Courier New",monospace;font-size:9pt;border-left:3px solid #ddd;padding:6pt 14pt;margin:8pt 0;background:#fafafa;}
     .attach-heading{font-weight:bold;color:#333;margin:8pt 0 2pt;}
   `;
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escapeHtml(title)}</title><style>${style}</style></head><body>${body}</body></html>`;
@@ -497,6 +573,25 @@ async function attachmentContentParagraphs(file: LukFile): Promise<Paragraph[]> 
       if (paragraphs.length) return paragraphs;
     }
     return [italicParagraph("Kon de tekst van dit Word-bestand niet automatisch uitlezen. Open het originele bestand voor de inhoud.")];
+  }
+  if (isPdfFile(file)) {
+    const pages = await extractPdfText(file.dataUrl);
+    if (pages && pages.some((p) => p)) {
+      const out: Paragraph[] = [];
+      pages.forEach((p, i) => {
+        out.push(labelParagraph(`Pagina ${i + 1}`));
+        out.push(p ? textParagraph(p) : italicParagraph("(geen doorzoekbare tekst op deze pagina)"));
+      });
+      return out;
+    }
+    return [italicParagraph("Kon de tekst van deze PDF niet automatisch uitlezen (mogelijk een scan zonder doorzoekbare tekst). Open het originele bestand voor de inhoud.")];
+  }
+  if (isPlainTextFile(file)) {
+    const text = decodePlainText(file.dataUrl);
+    if (text != null) {
+      const lines = truncateText(text).split(/\r?\n/);
+      return lines.map((line) => textParagraph(line));
+    }
   }
   return [italicParagraph(`Bestandstype: ${file.type || "onbekend"}. Dit bestandstype wordt niet automatisch weergegeven — open het originele bestand voor de inhoud.`)];
 }

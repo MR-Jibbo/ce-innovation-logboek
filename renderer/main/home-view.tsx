@@ -149,10 +149,11 @@ export function HomeView() {
   const [splashDone, setSplashDone] = useState(false);
 
   // Easter egg: 5 clicks on the sidebar brand within 5 seconds triggers a
-  // trampolining-fish effect for 5 seconds. Declared above the early
-  // returns below (setup/splash) so the hooks always run in the same
-  // order regardless of which screen is showing.
-  const [eggActive, setEggActive] = useState(false);
+  // trampolining-fish effect that ends with the fish diving off the bottom
+  // of the window. Declared above the early returns below (setup/splash) so
+  // the hooks always run in the same order regardless of which screen is
+  // showing.
+  const [eggFish, setEggFish] = useState<FishSpec[] | null>(null);
   const brandClickTimes = useRef<number[]>([]);
   const eggTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleBrandClick = () => {
@@ -161,8 +162,10 @@ export function HomeView() {
     if (brandClickTimes.current.length >= 5) {
       brandClickTimes.current = [];
       if (eggTimer.current) clearTimeout(eggTimer.current);
-      setEggActive(true);
-      eggTimer.current = setTimeout(() => setEggActive(false), 5000);
+      const fish = generateFishSpecs(EASTER_EGG_FISH_COUNT);
+      setEggFish(fish);
+      const runtimeMs = Math.max(...fish.map((f) => f.delayS + f.activeS)) * 1000 + 150;
+      eggTimer.current = setTimeout(() => setEggFish(null), runtimeMs);
     }
   };
 
@@ -197,7 +200,7 @@ export function HomeView() {
   return (
     <LogbookCtx.Provider value={logbook}>
       <div className="app">
-        {eggActive && <FishTrampoline />}
+        {eggFish && <FishTrampoline fish={eggFish} />}
         {/* Sidebar */}
         <div className="sidebar">
           <div className="sb-brand" onClick={handleBrandClick}>
@@ -327,34 +330,120 @@ export function HomeView() {
 
 const EASTER_EGG_FISH_COUNT = 12;
 
-/** Easter egg: a handful of fish trampolining up from the bottom of the app for 5 seconds. */
-function FishTrampoline() {
-  const fish = useMemo(
-    () =>
-      Array.from({ length: EASTER_EGG_FISH_COUNT }, () => ({
-        left: Math.random() * 92,
-        size: 40 + Math.random() * 36,
-        duration: 0.7 + Math.random() * 0.6,
-        delay: Math.random() * 0.8,
-        height: 45 + Math.random() * 35,
-        flip: Math.random() < 0.5,
-      })),
-    [],
-  );
+interface FishSpec {
+  id: number;
+  left: number; // starting horizontal position, vw %
+  size: number; // px, wrapper width (image scales to fit)
+  flip: boolean; // mirror the image itself (independent of the animated transform)
+  delayS: number;
+  hopDurationsS: number[]; // one per bounce
+  hopHeightsVh: number[]; // apex height of each bounce, one per hop
+  driftsPx: number[]; // cumulative horizontal drift at the end of each hop
+  groundRotations: number[]; // rotation at each landing, length hops + 1 (incl. start)
+  apexRotations: number[]; // rotation at each apex, one per hop
+  diveDriftPx: number;
+  diveDurationS: number;
+  diveRotationDeg: number;
+  activeS: number; // total time the animation itself runs, excluding delayS
+}
+
+/**
+ * Builds one randomized bounce-then-dive path per fish: a handful of
+ * trampoline hops (each losing a bit of height, like a real bouncing ball
+ * running out of energy) followed by a final dive down and off the bottom
+ * of the window instead of just vanishing.
+ */
+function generateFishSpecs(count: number): FishSpec[] {
+  return Array.from({ length: count }, (_, id) => {
+    const hops = 3 + Math.round(Math.random()); // 3 or 4 bounces
+    const delayS = Math.random() * 0.6;
+    const baseHeightVh = 42 + Math.random() * 30;
+    const hopDurationsS: number[] = [];
+    const hopHeightsVh: number[] = [];
+    const driftsPx: number[] = [];
+    const apexRotations: number[] = [];
+    const groundRotations: number[] = [-10 + Math.random() * 8];
+    let drift = 0;
+    for (let i = 0; i < hops; i++) {
+      hopDurationsS.push(0.6 + Math.random() * 0.3);
+      hopHeightsVh.push(baseHeightVh * (1 - i * 0.1) * (0.9 + Math.random() * 0.2));
+      drift += (Math.random() - 0.5) * 22;
+      driftsPx.push(drift);
+      apexRotations.push(6 + Math.random() * 16);
+      groundRotations.push(-12 + Math.random() * 14);
+    }
+    const diveDurationS = 0.55 + Math.random() * 0.3;
+    const diveSign = Math.random() < 0.5 ? -1 : 1;
+    return {
+      id,
+      left: Math.random() * 92,
+      size: 40 + Math.random() * 36,
+      flip: Math.random() < 0.5,
+      delayS,
+      hopDurationsS,
+      hopHeightsVh,
+      driftsPx,
+      groundRotations,
+      apexRotations,
+      diveDriftPx: drift + diveSign * (10 + Math.random() * 16),
+      diveDurationS,
+      diveRotationDeg: groundRotations[groundRotations.length - 1] + diveSign * (25 + Math.random() * 25),
+      activeS: hopDurationsS.reduce((a, b) => a + b, 0) + diveDurationS,
+    };
+  });
+}
+
+/** Renders one fish's @keyframes rule: bounce hops (ease-out up, ease-in down, with a
+ *  squash-on-landing/stretch-at-apex wobble) then a final dive off the bottom. */
+function buildFishKeyframes(name: string, f: FishSpec): string {
+  type Stop = { pct: number; transform: string; easing?: string };
+  const stops: Stop[] = [
+    { pct: 0, transform: `translate(0px, 0) rotate(${f.groundRotations[0]}deg) scale(1.14, 0.84)`, easing: "ease-out" },
+  ];
+  let t = 0;
+  f.hopDurationsS.forEach((dur, i) => {
+    const apexT = t + dur * 0.5;
+    const groundT = t + dur;
+    stops.push({
+      pct: (apexT / f.activeS) * 100,
+      transform: `translate(${f.driftsPx[i]}px, -${f.hopHeightsVh[i]}vh) rotate(${f.apexRotations[i]}deg) scale(0.9, 1.12)`,
+      easing: "ease-in",
+    });
+    stops.push({
+      pct: (groundT / f.activeS) * 100,
+      transform: `translate(${f.driftsPx[i]}px, 0) rotate(${f.groundRotations[i + 1]}deg) scale(1.14, 0.84)`,
+      easing: "ease-out",
+    });
+    t = groundT;
+  });
+  stops.push({
+    pct: 100,
+    transform: `translate(${f.diveDriftPx}px, 75vh) rotate(${f.diveRotationDeg}deg) scale(0.85, 1.22)`,
+  });
+  const body = stops
+    .map((s) => `${s.pct.toFixed(2)}% { transform: ${s.transform};${s.easing ? ` animation-timing-function: ${s.easing};` : ""} }`)
+    .join(" ");
+  return `@keyframes ${name} { ${body} }`;
+}
+
+/** Easter egg: a handful of fish trampolining up from the bottom of the app, each
+ *  eventually diving down and off the bottom of the window instead of just vanishing. */
+function FishTrampoline({ fish }: { fish: FishSpec[] }) {
+  const css = useMemo(() => fish.map((f) => buildFishKeyframes(`fish-dive-${f.id}`, f)).join("\n"), [fish]);
 
   return (
     <div className="easter-egg-fish-layer">
-      {fish.map((f, i) => (
+      <style>{css}</style>
+      {fish.map((f) => (
         <div
-          key={i}
+          key={f.id}
           className="easter-egg-fish-wrap"
           style={{
             left: `${f.left}%`,
             width: `${f.size}px`,
-            // @ts-expect-error custom properties consumed by the CSS animation
-            "--fish-height": `${f.height}vh`,
-            "--fish-duration": `${f.duration}s`,
-            "--fish-delay": `${f.delay}s`,
+            animationName: `fish-dive-${f.id}`,
+            animationDuration: `${f.activeS}s`,
+            animationDelay: `${f.delayS}s`,
           }}
         >
           <img

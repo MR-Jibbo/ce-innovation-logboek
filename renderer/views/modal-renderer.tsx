@@ -696,7 +696,7 @@ function LukEntryFormModal({ lukId, criterionId, periode, editId, onClose }: {
         <input type="file" multiple style={{ display: "none" }} onChange={handleFileChange} />
       </label>
       <p className="field-hint" style={{ marginBottom: "16px" }}>
-        Afbeeldingen worden automatisch verkleind. Andere bestanden worden als bijlage opgeslagen.
+        Bestanden worden ongewijzigd opgeslagen als bijlage.
       </p>
       <button className="btn btn-primary" style={{ width: "100%" }} onClick={handleSave}>
         {existing ? "Opslaan" : "Toevoegen"}
