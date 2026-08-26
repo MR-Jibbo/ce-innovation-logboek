@@ -32,7 +32,7 @@ export function BewijsstukkenView() {
             >
               <div className="flex-between" style={{ gap: "10px" }}>
                 <span style={{ fontWeight: "var(--fw-semibold)", fontSize: "var(--fs-base)" }}>
-                  {crit?.title || "Bewijsstuk"}
+                  {e.title || crit?.title || "Bewijsstuk"}
                 </span>
                 {e.files?.length > 0 && (
                   <span className="chip chip-gray" style={{ fontSize: "var(--fs-xs)", flexShrink: 0 }}>

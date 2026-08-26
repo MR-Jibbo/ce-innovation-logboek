@@ -9,8 +9,14 @@ import {
   Paragraph,
   TextRun,
   BorderStyle,
+  PageBreak,
+  AlignmentType,
+  TableOfContents,
+  Bookmark,
+  InternalHyperlink,
 } from "docx";
 import type { LogbookData } from "./logbook-store.js";
+import { htmlToDocxParagraphs, imageParagraphFromDataUrl, parseDataUri } from "./html-to-docx.js";
 
 interface SkillDef {
   id: string;
@@ -19,11 +25,25 @@ interface SkillDef {
   ind: string[];
 }
 
+interface Criterion {
+  id: string;
+  title: string;
+  desc: string;
+}
+
 interface LukDef {
   id: string;
   name: string;
   desc: string;
-  criteria: Array<{ id: string; title: string; desc: string }>;
+  criteria: Criterion[];
+}
+
+interface LukFile {
+  id: string;
+  name: string;
+  type: string;
+  dataUrl: string;
+  date: string;
 }
 
 function escapeHtml(text: string): string {
@@ -33,32 +53,218 @@ function escapeHtml(text: string): string {
     .replace(/>/g, "&gt;");
 }
 
-// ─── Shared HTML body builder ─────────────────────────────────────────────
+/** Word bookmark/anchor names must be alphanumeric + underscore, starting with a letter. */
+function slug(id: string): string {
+  return ("a_" + id).replace(/[^a-zA-Z0-9_]/g, "_").slice(0, 40);
+}
 
-function skillsHtml(data: LogbookData, allSkills: SkillDef[], key: string): string {
-  const psi = data.selectedSkillIds[key] || [];
-  const chosen = allSkills.filter((s) => psi.includes(s.id));
-  const pe = data.entries.filter((e) => e.periode === key);
-  let h = `<h2>Skills</h2>`;
-  chosen.forEach((sk) => {
+function isWordDocFile(file: LukFile): boolean {
+  return (
+    file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    /\.docx$/i.test(file.name)
+  );
+}
+
+/** Runs the uploaded .docx through mammoth, returning simplified HTML (with images inlined as data URIs), or null on any failure. */
+async function extractDocxHtml(dataUrl: string): Promise<string | null> {
+  const parsed = parseDataUri(dataUrl);
+  if (!parsed) return null;
+  try {
+    const mammoth = await import("mammoth");
+    const result = await mammoth.convertToHtml({ buffer: parsed.buffer }, { convertImage: mammoth.images.dataUri });
+    return result.value || null;
+  } catch (error) {
+    console.error(`[pdf-export] Kon Word-bijlage niet uitlezen: ${error}`);
+    return null;
+  }
+}
+
+function formatExportDate(d: Date): string {
+  return d.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
+}
+
+// ─── Export data model ──────────────────────────────────────────────────────
+// One shared shape built once from the raw logbook data, then rendered into
+// either the PDF's HTML or the Word document — so the two formats can never
+// drift apart in structure.
+
+interface MomentInfo {
+  id: string;
+  title: string;
+  date?: string;
+  description?: string;
+  reflection?: string;
+  actionItems: Array<{ text: string; done: boolean }>;
+}
+
+interface SkillSection {
+  skill: SkillDef;
+  plan?: string;
+  moments: MomentInfo[];
+}
+
+interface BewijsInfo {
+  id: string;
+  title: string;
+  text?: string;
+  files: LukFile[];
+}
+
+interface CriterionSection {
+  criterion: Criterion;
+  bewijsstukken: BewijsInfo[];
+}
+
+interface LukSection {
+  luk: LukDef;
+  criteria: CriterionSection[];
+}
+
+interface AttachmentInfo {
+  file: LukFile;
+  lukName: string;
+  criterionTitle: string;
+  bewijsTitle: string;
+  anchorId: string;
+}
+
+interface ExportModel {
+  projectKey: string;
+  studentName: string;
+  exportDateLabel: string;
+  skills: SkillSection[];
+  luks: LukSection[];
+  attachments: AttachmentInfo[];
+}
+
+function buildExportModel(data: LogbookData, allSkills: SkillDef[], lukDefs: LukDef[], projectKey: string): ExportModel {
+  const psi = data.selectedSkillIds[projectKey] || [];
+  const chosenSkills = allSkills.filter((s) => psi.includes(s.id));
+  const pe = data.entries.filter((e) => e.periode === projectKey);
+
+  const skills: SkillSection[] = chosenSkills.map((sk) => {
     const se = pe.filter((e) => e.skillId === sk.id);
-    const d = data.skillData[key]?.[sk.id] || {};
-    h += `<h3>${escapeHtml(sk.name)}</h3>`;
-    if (d.plan) h += `<p class="lbl">Ontwikkelplan</p><p>${escapeHtml(d.plan)}</p>`;
-    if (!se.length) {
+    const d = data.skillData[projectKey]?.[sk.id] || {};
+    return {
+      skill: sk,
+      plan: d.plan,
+      moments: se.map((e) => ({
+        id: e.id,
+        title: e.title,
+        date: e.date,
+        description: e.description,
+        reflection: e.reflection,
+        actionItems: (e.actionItems || []).map((a) => ({ text: a.text, done: a.done })),
+      })),
+    };
+  });
+
+  const ls = data.lukSelections[projectKey] || [];
+  const chosenLuks = lukDefs.filter((l) => ls.includes(l.id));
+  const attachments: AttachmentInfo[] = [];
+
+  const luks: LukSection[] = chosenLuks.map((luk) => {
+    const criteria: CriterionSection[] = luk.criteria.map((c) => {
+      const ces = data.lukEntries.filter((e) => e.periode === projectKey && e.lukId === luk.id && e.criterionId === c.id);
+      const bewijsstukken: BewijsInfo[] = ces.map((e, idx) => {
+        const customTitle = e.title?.trim();
+        const bewijsTitle = customTitle || (ces.length > 1 ? `${c.title} — bewijsstuk ${idx + 1}` : c.title);
+        const files = e.files || [];
+        files.forEach((f) => {
+          attachments.push({
+            file: f,
+            lukName: luk.name,
+            criterionTitle: c.title,
+            bewijsTitle,
+            anchorId: slug(`bijlage_${f.id}`),
+          });
+        });
+        return { id: e.id, title: bewijsTitle, text: e.text, files };
+      });
+      return { criterion: c, bewijsstukken };
+    });
+    return { luk, criteria };
+  });
+
+  attachments.sort((a, b) => a.file.name.localeCompare(b.file.name, "nl", { sensitivity: "base" }));
+
+  return {
+    projectKey,
+    studentName: data.studentName || "-",
+    exportDateLabel: formatExportDate(new Date()),
+    skills,
+    luks,
+    attachments,
+  };
+}
+
+// ─── HTML (PDF) rendering ───────────────────────────────────────────────────
+
+function coverHtml(model: ExportModel): string {
+  return `
+    <div class="cover">
+      <p class="cover-kicker">Logboek</p>
+      <h1 class="cover-title">${escapeHtml(model.projectKey)}</h1>
+      <table class="cover-meta">
+        <tr><td>Student</td><td>${escapeHtml(model.studentName)}</td></tr>
+        <tr><td>Geëxporteerd op</td><td>${escapeHtml(model.exportDateLabel)}</td></tr>
+      </table>
+    </div>
+    <div class="page-break"></div>`;
+}
+
+function tocHtml(model: ExportModel): string {
+  let h = `<h1>Inhoudsopgave</h1><div class="toc">`;
+  h += `<p class="toc-h1"><a href="#sec-skills">Skills</a></p>`;
+  model.skills.forEach((s) => {
+    h += `<p class="toc-h2"><a href="#skill-${slug(s.skill.id)}">${escapeHtml(s.skill.name)}</a></p>`;
+    s.moments.forEach((m) => {
+      h += `<p class="toc-h3"><a href="#moment-${slug(m.id)}">${escapeHtml(m.title)}</a></p>`;
+    });
+  });
+  h += `<p class="toc-h1"><a href="#sec-luks">Leeruitkomsten</a></p>`;
+  model.luks.forEach((l) => {
+    h += `<p class="toc-h2"><a href="#luk-${slug(l.luk.id)}">${escapeHtml(l.luk.name)}</a></p>`;
+    l.criteria.forEach((c) => {
+      c.bewijsstukken.forEach((b) => {
+        h += `<p class="toc-h3"><a href="#bewijs-${slug(b.id)}">${escapeHtml(b.title)}</a></p>`;
+      });
+    });
+  });
+  h += `<p class="toc-h1"><a href="#sec-bijlagen">Bijlagen</a></p>`;
+  model.attachments.forEach((a) => {
+    h += `<p class="toc-h2"><a href="#${a.anchorId}">${escapeHtml(a.file.name)}</a></p>`;
+  });
+  h += `</div><div class="page-break"></div>`;
+  return h;
+}
+
+function actionItemsHtml(items: MomentInfo["actionItems"]): string {
+  if (!items.length) return "";
+  let h = `<p class="lbl">Actiepunten</p>`;
+  items.forEach((a) => {
+    h += `<p>${a.done ? "&#9745;" : "&#9744;"} ${escapeHtml(a.text)}</p>`;
+  });
+  return h;
+}
+
+function skillsSectionHtml(model: ExportModel): string {
+  let h = `<h1 id="sec-skills">Skills</h1>`;
+  if (!model.skills.length) {
+    h += `<p><em>Geen skills geselecteerd voor dit project.</em></p>`;
+  }
+  model.skills.forEach((s) => {
+    h += `<h2 id="skill-${slug(s.skill.id)}">${escapeHtml(s.skill.name)}</h2>`;
+    if (s.plan) h += `<p class="lbl">Ontwikkelplan</p><p>${escapeHtml(s.plan)}</p>`;
+    if (!s.moments.length) {
       h += `<p><em>Nog geen ontwikkelmomenten gedocumenteerd.</em></p>`;
     } else {
-      se.forEach((e) => {
-        h += `<h3>&rarr; ${escapeHtml(e.title)}</h3>`;
-        if (e.date) h += `<p class="lbl">Datum</p><p>${escapeHtml(e.date)}</p>`;
-        if (e.description) h += `<p class="lbl">Beschrijving</p><p>${escapeHtml(e.description)}</p>`;
-        if (e.reflection) h += `<p class="lbl">Reflectie</p><p>${escapeHtml(e.reflection)}</p>`;
-        if (e.actionItems?.length) {
-          h += `<p class="lbl">Actiepunten</p>`;
-          e.actionItems.forEach((a) => {
-            h += `<p>&#9675; ${escapeHtml(a.text)}</p>`;
-          });
-        }
+      s.moments.forEach((m) => {
+        h += `<h3 id="moment-${slug(m.id)}">${escapeHtml(m.title)}</h3>`;
+        if (m.date) h += `<p class="lbl">Datum</p><p>${escapeHtml(m.date)}</p>`;
+        if (m.description) h += `<p class="lbl">Beschrijving</p><p>${escapeHtml(m.description)}</p>`;
+        if (m.reflection) h += `<p class="lbl">Reflectie</p><p>${escapeHtml(m.reflection)}</p>`;
+        h += actionItemsHtml(m.actionItems);
         h += `<hr/>`;
       });
     }
@@ -66,27 +272,27 @@ function skillsHtml(data: LogbookData, allSkills: SkillDef[], key: string): stri
   return h;
 }
 
-function lukHtml(data: LogbookData, lukDefs: LukDef[], key: string): string {
-  const ls = data.lukSelections[key] || [];
-  const al = lukDefs.filter((l) => ls.includes(l.id));
-  let h = `<h2>Leeruitkomsten</h2>`;
-  al.forEach((luk) => {
-    h += `<h3>${escapeHtml(luk.name)}</h3><p>${escapeHtml(luk.desc)}</p>`;
-    luk.criteria.forEach((c) => {
-      const ces = data.lukEntries.filter(
-        (e) => e.periode === key && e.lukId === luk.id && e.criterionId === c.id,
-      );
-      h += `<p class="lbl">${escapeHtml(c.title)}</p><p>${escapeHtml(c.desc)}</p>`;
-      if (!ces.length) {
+function lukSectionHtml(model: ExportModel): string {
+  let h = `<h1 id="sec-luks">Leeruitkomsten</h1>`;
+  if (!model.luks.length) {
+    h += `<p><em>Geen leeruitkomsten geselecteerd voor dit project.</em></p>`;
+  }
+  model.luks.forEach((l) => {
+    h += `<h2 id="luk-${slug(l.luk.id)}">${escapeHtml(l.luk.name)}</h2>`;
+    if (l.luk.desc) h += `<p>${escapeHtml(l.luk.desc)}</p>`;
+    l.criteria.forEach((c) => {
+      h += `<p class="crit-label">${escapeHtml(c.criterion.title)}</p>`;
+      if (c.criterion.desc) h += `<p>${escapeHtml(c.criterion.desc)}</p>`;
+      if (!c.bewijsstukken.length) {
         h += `<p><em>Nog geen bewijsstukken.</em></p>`;
       } else {
-        ces.forEach((e) => {
-          if (e.text) h += `<p>${escapeHtml(e.text)}</p>`;
-          if (e.files?.length) {
-            e.files.forEach((f) => {
-              h += `<p>&#128206; ${escapeHtml(f.name)}</p>`;
-            });
-          }
+        c.bewijsstukken.forEach((b) => {
+          h += `<h3 id="bewijs-${slug(b.id)}">${escapeHtml(b.title)}</h3>`;
+          if (b.text) h += `<p>${escapeHtml(b.text)}</p>`;
+          b.files.forEach((f) => {
+            const anchor = slug(`bijlage_${f.id}`);
+            h += `<p>&#128206; <a href="#${anchor}">${escapeHtml(f.name)}</a> — zie Bijlagen</p>`;
+          });
           h += `<hr/>`;
         });
       }
@@ -95,12 +301,82 @@ function lukHtml(data: LogbookData, lukDefs: LukDef[], key: string): string {
   return h;
 }
 
-function buildBody(data: LogbookData, allSkills: SkillDef[], lukDefs: LukDef[], projectKey: string): string {
-  return `<h1>Logboek, ${escapeHtml(projectKey)}</h1>${skillsHtml(data, allSkills, projectKey)}${lukHtml(data, lukDefs, projectKey)}`;
+/**
+ * The uploaded Word document's own heading tags (h1-h6) must not leak into
+ * the export's own H1/H2/H3 document outline — otherwise a bewijsstuk's
+ * internal heading renders as a full section title identical to "Skills"
+ * or "Bijlagen". Demoted to a plain styled paragraph instead.
+ */
+function demoteHeadings(html: string): string {
+  return html.replace(/<h[1-6]([^>]*)>/gi, '<p class="attach-heading"$1>').replace(/<\/h[1-6]>/gi, "</p>");
+}
+
+async function attachmentContentHtml(file: LukFile): Promise<string> {
+  if (file.type?.startsWith("image/")) {
+    return `<img class="attachment-image" src="${file.dataUrl}" alt="${escapeHtml(file.name)}"/>`;
+  }
+  if (isWordDocFile(file)) {
+    const html = await extractDocxHtml(file.dataUrl);
+    if (html) return `<div class="attachment-doc">${demoteHeadings(html)}</div>`;
+    return `<p><em>Kon de tekst van dit Word-bestand niet automatisch uitlezen. Open het originele bestand voor de inhoud.</em></p>`;
+  }
+  return `<p><em>Bestandstype: ${escapeHtml(file.type || "onbekend")}. Dit bestandstype wordt niet automatisch weergegeven — open het originele bestand voor de inhoud.</em></p>`;
+}
+
+async function attachmentsSectionHtml(model: ExportModel): Promise<string> {
+  let h = `<h1 id="sec-bijlagen">Bijlagen</h1>`;
+  if (!model.attachments.length) {
+    h += `<p><em>Geen bijlagen geüpload.</em></p>`;
+    return h;
+  }
+  for (const a of model.attachments) {
+    h += `<h2 id="${a.anchorId}">${escapeHtml(a.file.name)}</h2>`;
+    h += `<p class="lbl">Hoort bij</p><p>${escapeHtml(a.lukName)} &rarr; ${escapeHtml(a.criterionTitle)} &rarr; ${escapeHtml(a.bewijsTitle)}</p>`;
+    if (a.file.date) h += `<p class="lbl">Datum toegevoegd</p><p>${escapeHtml(a.file.date)}</p>`;
+    h += await attachmentContentHtml(a.file);
+    h += `<hr/>`;
+  }
+  return h;
+}
+
+async function buildBody(data: LogbookData, allSkills: SkillDef[], lukDefs: LukDef[], projectKey: string): Promise<string> {
+  const model = buildExportModel(data, allSkills, lukDefs, projectKey);
+  return (
+    coverHtml(model) +
+    tocHtml(model) +
+    skillsSectionHtml(model) +
+    lukSectionHtml(model) +
+    (await attachmentsSectionHtml(model))
+  );
 }
 
 function buildFullHtml(body: string, title: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escapeHtml(title)}</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.6;color:#454545;margin:40px;}h1{color:#000;font-size:18pt;border-bottom:2px solid #E50056;padding-bottom:6px;margin-bottom:14pt;}h2{color:#E50056;font-size:14pt;margin-top:16pt;}h3{color:#f97316;font-size:12pt;}.lbl{font-size:9pt;font-weight:bold;color:#919191;text-transform:uppercase;letter-spacing:.05em;}p{margin:4pt 0;}hr{border:none;border-top:1px solid #E3E3E3;margin:10pt 0;}</style></head><body>${body}</body></html>`;
+  const style = `
+    body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.6;color:#333;margin:40px;}
+    h1{color:#111;font-size:19pt;border-bottom:1px solid #ccc;padding-bottom:6px;margin:22pt 0 12pt;}
+    h2{color:#111;font-size:14pt;margin-top:18pt;}
+    h3{color:#111;font-size:12pt;margin-top:12pt;}
+    a{color:#333;}
+    .lbl{font-size:9pt;font-weight:bold;color:#777;text-transform:uppercase;letter-spacing:.05em;margin-top:8pt;}
+    .crit-label{font-weight:bold;color:#444;margin-top:10pt;}
+    p{margin:4pt 0;}
+    hr{border:none;border-top:1px solid #e3e3e3;margin:12pt 0;}
+    .page-break{page-break-after:always;}
+    .cover{display:flex;flex-direction:column;align-items:center;justify-content:center;height:90vh;text-align:center;}
+    .cover-kicker{font-size:12pt;color:#777;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4pt;}
+    .cover-title{font-size:28pt;color:#111;margin-bottom:28pt;border:none;}
+    .cover-meta{font-size:11pt;color:#333;border-collapse:collapse;}
+    .cover-meta td{padding:4pt 10pt;text-align:left;}
+    .cover-meta td:first-child{color:#777;text-transform:uppercase;font-size:9pt;letter-spacing:.05em;}
+    .toc-h1{font-weight:bold;font-size:12pt;margin-top:14pt;}
+    .toc-h2{margin-left:18pt;font-size:11pt;}
+    .toc-h3{margin-left:36pt;font-size:10pt;color:#555;}
+    .toc a{text-decoration:none;color:#333;}
+    .attachment-image{display:block;max-width:440px;max-height:600px;border:1px solid #ccc;border-radius:4px;margin:8pt 0;}
+    .attachment-doc{border-left:3px solid #ddd;padding:2pt 14pt;margin:8pt 0;background:#fafafa;}
+    .attach-heading{font-weight:bold;color:#333;margin:8pt 0 2pt;}
+  `;
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escapeHtml(title)}</title><style>${style}</style></head><body>${body}</body></html>`;
 }
 
 // ─── PDF export via printToPDF ─────────────────────────────────────────────
@@ -125,7 +401,7 @@ export async function exportLogbookPdf(
   }
 
   try {
-    const body = buildBody(data, allSkills, lukDefs, projectKey);
+    const body = await buildBody(data, allSkills, lukDefs, projectKey);
     const fullHtml = buildFullHtml(body, title);
 
     // Write HTML to a temp file for the hidden window to load
@@ -164,135 +440,153 @@ export async function exportLogbookPdf(
 
 // ─── Word export via docx ──────────────────────────────────────────────────
 
-function buildWordDocument(
+function labelParagraph(text: string): Paragraph {
+  return new Paragraph({ children: [new TextRun({ text, bold: true, size: 18, color: "777777" })], spacing: { before: 120 } });
+}
+
+function textParagraph(text: string): Paragraph {
+  return new Paragraph({ children: [new TextRun({ text })] });
+}
+
+function italicParagraph(text: string): Paragraph {
+  return new Paragraph({ children: [new TextRun({ text, italics: true })] });
+}
+
+function dividerParagraph(): Paragraph {
+  return new Paragraph({
+    children: [new TextRun({ text: "" })],
+    border: { bottom: { color: "E3E3E3", space: 1, style: BorderStyle.SINGLE, size: 6 } },
+    spacing: { after: 120 },
+  });
+}
+
+function actionItemsParagraphs(items: MomentInfo["actionItems"]): Paragraph[] {
+  if (!items.length) return [];
+  const out: Paragraph[] = [labelParagraph("Actiepunten")];
+  items.forEach((a) => {
+    out.push(textParagraph(`${a.done ? "☑" : "☐"} ${a.text}`));
+  });
+  return out;
+}
+
+async function attachmentContentParagraphs(file: LukFile): Promise<Paragraph[]> {
+  if (file.type?.startsWith("image/")) {
+    const p = imageParagraphFromDataUrl(file.dataUrl);
+    return p ? [p] : [italicParagraph("Kon deze afbeelding niet laden.")];
+  }
+  if (isWordDocFile(file)) {
+    const html = await extractDocxHtml(file.dataUrl);
+    if (html) {
+      const paragraphs = htmlToDocxParagraphs(html);
+      if (paragraphs.length) return paragraphs;
+    }
+    return [italicParagraph("Kon de tekst van dit Word-bestand niet automatisch uitlezen. Open het originele bestand voor de inhoud.")];
+  }
+  return [italicParagraph(`Bestandstype: ${file.type || "onbekend"}. Dit bestandstype wordt niet automatisch weergegeven — open het originele bestand voor de inhoud.`)];
+}
+
+async function buildWordDocument(
   data: LogbookData,
   allSkills: SkillDef[],
   lukDefs: LukDef[],
   projectKey: string,
-): Document {
-  const children: Paragraph[] = [];
+): Promise<Document> {
+  const model = buildExportModel(data, allSkills, lukDefs, projectKey);
+  const children: Array<Paragraph | TableOfContents> = [];
 
-  // Title
+  // ── Voorblad ──
   children.push(
-    new Paragraph({
-      heading: HeadingLevel.HEADING_1,
-      children: [new TextRun({ text: `Logboek, ${projectKey}`, bold: true })],
-      border: { bottom: { color: "E50056", space: 1, style: BorderStyle.SINGLE, size: 6 } },
-    }),
+    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 2400, after: 200 }, children: [new TextRun({ text: "LOGBOEK", bold: true, size: 30 })] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 600 }, children: [new TextRun({ text: model.projectKey, size: 44, bold: true })] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Student: ${model.studentName}`, size: 22 })] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Geëxporteerd op: ${model.exportDateLabel}`, size: 22 })] }),
+    new Paragraph({ children: [new PageBreak()] }),
   );
 
-  // Skills section
+  // ── Inhoudsopgave ──
   children.push(
-    new Paragraph({
-      heading: HeadingLevel.HEADING_2,
-      children: [new TextRun({ text: "Skills", color: "E50056", bold: true })],
-    }),
+    new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Inhoudsopgave")] }),
+    new TableOfContents("Inhoudsopgave", { hyperlink: true, headingStyleRange: "1-3" }),
+    new Paragraph({ children: [new PageBreak()] }),
   );
 
-  const psi = data.selectedSkillIds[projectKey] || [];
-  const chosen = allSkills.filter((s) => psi.includes(s.id));
-  const pe = data.entries.filter((e) => e.periode === projectKey);
-
-  chosen.forEach((sk) => {
-    const se = pe.filter((e) => e.skillId === sk.id);
-    const d = data.skillData[projectKey]?.[sk.id] || {};
-
-    children.push(
-      new Paragraph({
-        heading: HeadingLevel.HEADING_3,
-        children: [new TextRun({ text: sk.name, color: "f97316", bold: true })],
-      }),
-    );
-
-    if (d.plan) {
-      children.push(new Paragraph({ children: [new TextRun({ text: "Ontwikkelplan", bold: true, size: 18, color: "919191" })] }));
-      children.push(new Paragraph({ children: [new TextRun({ text: d.plan })] }));
+  // ── Skills ──
+  children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Skills")] }));
+  if (!model.skills.length) children.push(italicParagraph("Geen skills geselecteerd voor dit project."));
+  model.skills.forEach((s) => {
+    children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(s.skill.name)] }));
+    if (s.plan) {
+      children.push(labelParagraph("Ontwikkelplan"), textParagraph(s.plan));
     }
-
-    if (!se.length) {
-      children.push(new Paragraph({ children: [new TextRun({ text: "Nog geen ontwikkelmomenten gedocumenteerd.", italics: true })] }));
+    if (!s.moments.length) {
+      children.push(italicParagraph("Nog geen ontwikkelmomenten gedocumenteerd."));
     } else {
-      se.forEach((e) => {
-        children.push(
-          new Paragraph({
-            heading: HeadingLevel.HEADING_3,
-            children: [new TextRun({ text: `→ ${e.title}`, color: "f97316", bold: true })],
-          }),
-        );
-        if (e.date) {
-          children.push(new Paragraph({ children: [new TextRun({ text: "Datum", bold: true, size: 18, color: "919191" })] }));
-          children.push(new Paragraph({ children: [new TextRun({ text: e.date })] }));
-        }
-        if (e.description) {
-          children.push(new Paragraph({ children: [new TextRun({ text: "Beschrijving", bold: true, size: 18, color: "919191" })] }));
-          children.push(new Paragraph({ children: [new TextRun({ text: e.description })] }));
-        }
-        if (e.reflection) {
-          children.push(new Paragraph({ children: [new TextRun({ text: "Reflectie", bold: true, size: 18, color: "919191" })] }));
-          children.push(new Paragraph({ children: [new TextRun({ text: e.reflection })] }));
-        }
-        if (e.actionItems?.length) {
-          children.push(new Paragraph({ children: [new TextRun({ text: "Actiepunten", bold: true, size: 18, color: "919191" })] }));
-          e.actionItems.forEach((a) => {
-            children.push(new Paragraph({ children: [new TextRun({ text: `○ ${a.text}` })] }));
-          });
-        }
-        children.push(new Paragraph({ children: [new TextRun({ text: "" })], border: { bottom: { color: "E3E3E3", space: 1, style: BorderStyle.SINGLE, size: 6 } } }));
+      s.moments.forEach((m) => {
+        children.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun(m.title)] }));
+        if (m.date) children.push(labelParagraph("Datum"), textParagraph(m.date));
+        if (m.description) children.push(labelParagraph("Beschrijving"), textParagraph(m.description));
+        if (m.reflection) children.push(labelParagraph("Reflectie"), textParagraph(m.reflection));
+        children.push(...actionItemsParagraphs(m.actionItems));
+        children.push(dividerParagraph());
       });
     }
   });
 
-  // LUK section
-  children.push(
-    new Paragraph({
-      heading: HeadingLevel.HEADING_2,
-      children: [new TextRun({ text: "Leeruitkomsten", color: "E50056", bold: true })],
-    }),
-  );
-
-  const ls = data.lukSelections[projectKey] || [];
-  const al = lukDefs.filter((l) => ls.includes(l.id));
-
-  al.forEach((luk) => {
-    children.push(
-      new Paragraph({
-        heading: HeadingLevel.HEADING_3,
-        children: [new TextRun({ text: luk.name, color: "f97316", bold: true })],
-      }),
-    );
-    if (luk.desc) {
-      children.push(new Paragraph({ children: [new TextRun({ text: luk.desc })] }));
-    }
-
-    luk.criteria.forEach((c) => {
-      const ces = data.lukEntries.filter(
-        (e) => e.periode === projectKey && e.lukId === luk.id && e.criterionId === c.id,
-      );
-
-      children.push(new Paragraph({ children: [new TextRun({ text: c.title, bold: true, size: 18, color: "919191" })] }));
-      if (c.desc) {
-        children.push(new Paragraph({ children: [new TextRun({ text: c.desc })] }));
-      }
-
-      if (!ces.length) {
-        children.push(new Paragraph({ children: [new TextRun({ text: "Nog geen bewijsstukken.", italics: true })] }));
+  // ── Leeruitkomsten ──
+  children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Leeruitkomsten")] }));
+  if (!model.luks.length) children.push(italicParagraph("Geen leeruitkomsten geselecteerd voor dit project."));
+  model.luks.forEach((l) => {
+    children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(l.luk.name)] }));
+    if (l.luk.desc) children.push(textParagraph(l.luk.desc));
+    l.criteria.forEach((c) => {
+      children.push(new Paragraph({ children: [new TextRun({ text: c.criterion.title, bold: true })], spacing: { before: 160 } }));
+      if (c.criterion.desc) children.push(textParagraph(c.criterion.desc));
+      if (!c.bewijsstukken.length) {
+        children.push(italicParagraph("Nog geen bewijsstukken."));
       } else {
-        ces.forEach((e) => {
-          if (e.text) {
-            children.push(new Paragraph({ children: [new TextRun({ text: e.text })] }));
-          }
-          if (e.files?.length) {
-            e.files.forEach((f) => {
-              children.push(new Paragraph({ children: [new TextRun({ text: `📎 ${f.name}` })] }));
-            });
-          }
-          children.push(new Paragraph({ children: [new TextRun({ text: "" })], border: { bottom: { color: "E3E3E3", space: 1, style: BorderStyle.SINGLE, size: 6 } } }));
+        c.bewijsstukken.forEach((b) => {
+          children.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun(b.title)] }));
+          if (b.text) children.push(textParagraph(b.text));
+          b.files.forEach((f) => {
+            const anchor = slug(`bijlage_${f.id}`);
+            children.push(
+              new Paragraph({
+                children: [
+                  new InternalHyperlink({
+                    anchor,
+                    children: [new TextRun({ text: `📎 ${f.name} (zie Bijlagen)`, style: "Hyperlink" })],
+                  }),
+                ],
+              }),
+            );
+          });
+          children.push(dividerParagraph());
         });
       }
     });
   });
 
+  // ── Bijlagen ──
+  children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun("Bijlagen")] }));
+  if (!model.attachments.length) {
+    children.push(italicParagraph("Geen bijlagen geüpload."));
+  } else {
+    for (const a of model.attachments) {
+      children.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          children: [new Bookmark({ id: a.anchorId, children: [new TextRun(a.file.name)] })],
+        }),
+      );
+      children.push(labelParagraph("Hoort bij"), textParagraph(`${a.lukName} → ${a.criterionTitle} → ${a.bewijsTitle}`));
+      if (a.file.date) children.push(labelParagraph("Datum toegevoegd"), textParagraph(a.file.date));
+      children.push(...(await attachmentContentParagraphs(a.file)));
+      children.push(dividerParagraph());
+    }
+  }
+
   return new Document({
+    features: { updateFields: true },
     sections: [
       {
         properties: {},
@@ -322,7 +616,7 @@ export async function exportLogbookWord(
   }
 
   try {
-    const doc = buildWordDocument(data, allSkills, lukDefs, projectKey);
+    const doc = await buildWordDocument(data, allSkills, lukDefs, projectKey);
     const buffer = await Packer.toBuffer(doc);
     await fs.writeFile(result.filePath, buffer);
     console.info(`[pdf-export] Word exported to ${result.filePath}`);

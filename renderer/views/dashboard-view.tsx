@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
 import { getGreeting, pk, yearOfIndex, yearSuffix, daysUntilLabel } from "../lib/use-logbook";
-import { ALL_SKILLS, PROJ_COLORS } from "../lib/constants";
+import { ALL_SKILLS, PROJ_COLORS, LUK_DEFS } from "../lib/constants";
 import { AppIcon } from "../components/AppIcon";
 import type { Entry, LukEntry, Deadline } from "../lib/types";
 
@@ -10,6 +10,14 @@ function todayISO(): string {
 }
 
 const RECENT_PAGE_SIZE = 5;
+
+interface RecentActivity {
+  id: string;
+  title: string;
+  periode: string;
+  date: string;
+  kind: "moment" | "bewijs";
+}
 
 export function DashboardView() {
   const ctx = useLogbookCtx();
@@ -43,9 +51,20 @@ export function DashboardView() {
     .map((sk) => ({ sk, count: relEntries.filter((e: Entry) => e.skillId === sk.id).length }))
     .sort((a, b) => b.count - a.count);
 
-  const recentEntriesAll = [...state.entries]
+  // Recente activiteiten: ontwikkelmomenten (skills) én bewijsstukken (LUK),
+  // samengevoegd op datum — bewijsstukken ontbraken hier eerder omdat ze
+  // geen eigen datum hadden.
+  const momentActivities: RecentActivity[] = state.entries
     .filter((e: Entry) => e.date)
-    .sort((a: Entry, b: Entry) => b.date.localeCompare(a.date));
+    .map((e: Entry) => ({ id: e.id, title: e.title, periode: e.periode, date: e.date, kind: "moment" }));
+  const bewijsActivities: RecentActivity[] = state.lukEntries
+    .filter((e: LukEntry) => e.date)
+    .map((e: LukEntry) => {
+      const luk = LUK_DEFS.find((l) => l.id === e.lukId);
+      const crit = luk?.criteria.find((c) => c.id === e.criterionId);
+      return { id: e.id, title: e.title || crit?.title || "Bewijsstuk", periode: e.periode, date: e.date as string, kind: "bewijs" };
+    });
+  const recentEntriesAll = [...momentActivities, ...bewijsActivities].sort((a, b) => b.date.localeCompare(a.date));
   const recentEntries = recentExpanded ? recentEntriesAll : recentEntriesAll.slice(0, RECENT_PAGE_SIZE);
 
   const today = todayISO();
@@ -126,12 +145,12 @@ export function DashboardView() {
                     </p>
                   </div>
                 ) : (
-                  recentEntries.map((e: Entry) => (
+                  recentEntries.map((e: RecentActivity) => (
                     <button
-                      key={e.id}
+                      key={`${e.kind}-${e.id}`}
                       className="entry-row"
                       style={{ width: "100%" }}
-                      onClick={() => ctx.setModal({ type: "entryDetail", entryId: e.id })}
+                      onClick={() => ctx.setModal(e.kind === "moment" ? { type: "entryDetail", entryId: e.id } : { type: "lukDetail", entryId: e.id })}
                     >
                       <div className="flex-between">
                         <span style={{ fontSize: "var(--fs-sm)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{e.title}</span>

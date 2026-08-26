@@ -28,8 +28,10 @@ export interface LogbookData {
     lukId: string;
     criterionId: string;
     periode: string;
+    title?: string;
     text: string;
     files: Array<{ id: string; name: string; type: string; dataUrl: string; date: string }>;
+    date?: string;
   }>;
   openYears: { jaar1: boolean; jaar2: boolean };
   deadlines?: Array<{ id: string; title: string; date: string; projectKey?: string; done?: boolean }>;

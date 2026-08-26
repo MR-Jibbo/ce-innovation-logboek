@@ -76,8 +76,12 @@ export interface LukEntry {
   lukId: string;
   criterionId: string;
   periode: string;
+  title?: string;
   text: string;
   files: LukFile[];
+  /** ISO yyyy-mm-dd, stamped automatically on creation (see addLukEntry) —
+   *  used to place bewijsstukken in the dashboard's "Recente activiteiten". */
+  date?: string;
 }
 
 export interface SkillDataItem {

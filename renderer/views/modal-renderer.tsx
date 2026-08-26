@@ -461,6 +461,11 @@ function LukCritDetailModal({ lukId, criterionId, periode, onClose }: {
           >
             <div className="flex-between" style={{ gap: "8px" }}>
               <div style={{ flex: 1 }}>
+                {entry.title && (
+                  <p style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-bold)", color: "var(--text-primary)", margin: "0 0 3px" }}>
+                    {entry.title}
+                  </p>
+                )}
                 {entry.text && (
                   <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-primary)", margin: "0 0 5px", lineHeight: "1.4" }}>
                     {entry.text.substring(0, 80) + (entry.text.length > 80 ? "…" : "")}
@@ -532,11 +537,18 @@ function LukDetailModal({ entryId, onClose }: { entryId: string; onClose: () => 
 
   return (
     <>
-      <ModalHeader title={crit?.title || "Bewijsstuk"} onClose={onClose} />
+      <ModalHeader title={entry.title || crit?.title || "Bewijsstuk"} onClose={onClose} />
       {crit && (
-        <p className="subtle-box" style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", marginBottom: "14px", lineHeight: "1.6" }}>
-          {crit.desc}
-        </p>
+        <>
+          {entry.title && (
+            <p style={{ fontSize: "var(--fs-xs)", fontWeight: "var(--fw-bold)", color: "var(--pink)", letterSpacing: "var(--tracking-wide)", textTransform: "uppercase", marginBottom: "4px" }}>
+              {crit.title}
+            </p>
+          )}
+          <p className="subtle-box" style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", marginBottom: "14px", lineHeight: "1.6" }}>
+            {crit.desc}
+          </p>
+        </>
       )}
       {entry.text && (
         <p style={{ fontSize: "var(--fs-base)", color: "var(--text-primary)", whiteSpace: "pre-wrap", marginBottom: "14px", lineHeight: "1.6" }}>
@@ -599,6 +611,7 @@ function LukEntryFormModal({ lukId, criterionId, periode, editId, onClose }: {
   const luk = LUK_DEFS.find((l) => l.id === lukId);
   const crit = luk?.criteria.find((c) => c.id === criterionId);
 
+  const [title, setTitle] = useState(existing?.title || "");
   const [text, setText] = useState(existing?.text || "");
   const [files, setFiles] = useState<LukFile[]>(existing?.files ? existing.files.map((f) => ({ ...f })) : []);
 
@@ -633,9 +646,9 @@ function LukEntryFormModal({ lukId, criterionId, periode, editId, onClose }: {
 
   const handleSave = () => {
     if (existing) {
-      ctx.updateLukEntry(editId!, { text: text.trim(), files });
+      ctx.updateLukEntry(editId!, { title: title.trim(), text: text.trim(), files });
     } else {
-      ctx.addLukEntry({ lukId, criterionId, periode, text: text.trim(), files });
+      ctx.addLukEntry({ lukId, criterionId, periode, title: title.trim(), text: text.trim(), files });
     }
     ctx.setModal({ type: "lukCritDetail", lukId, criterionId, periode });
   };
@@ -649,6 +662,15 @@ function LukEntryFormModal({ lukId, criterionId, periode, editId, onClose }: {
           <p className="subtle-box" style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", marginBottom: "14px", lineHeight: "1.6" }}>{crit.desc}</p>
         </>
       )}
+      <FieldLabel label="Titel" hint="Handig om dit bewijsstuk later terug te vinden, bijvoorbeeld in je exportbestand.">
+        <input
+          type="text"
+          className="input"
+          placeholder="Bijv. 'Interview met stakeholder X'"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </FieldLabel>
       <FieldLabel label="Toelichting">
         <textarea
           className="input"

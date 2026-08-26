@@ -280,7 +280,9 @@ export function useLogbook() {
   const addLukEntry = useCallback((entry: Omit<LukEntry, "id">) => {
     update((prev) => ({
       ...prev,
-      lukEntries: [...prev.lukEntries, { ...entry, id: uid("le") }],
+      // Auto-stamp a creation date (ISO, like Entry.date) so bewijsstukken
+      // can be placed in the dashboard's "Recente activiteiten" feed.
+      lukEntries: [...prev.lukEntries, { ...entry, id: uid("le"), date: entry.date || new Date().toISOString().slice(0, 10) }],
     }));
   }, [update]);
 
