@@ -51,14 +51,27 @@ export interface ActionItem {
   done: boolean;
 }
 
+/**
+ * A student-created project. There is no more fixed "Jaar 1"/"Jaar 2"
+ * structure — a student creates as many projects as they want, each with
+ * its own required LUK-koppeling and optional skills.
+ */
+export interface Project {
+  id: string;
+  naam: string;
+  /** Leeruitkomst ids (LUK_DEFS) linked to this project — required, min. 1. */
+  lukIds: string[];
+  /** Skill ids (ALL_SKILLS) linked to this project — optional, may be empty. */
+  skillIds: string[];
+  /** ISO yyyy-mm-dd, stamped on creation. */
+  aangemaaktOp: string;
+}
+
 export interface Entry {
   id: string;
   skillId: string;
   title: string;
-  /** Stable project-slot key ("0".."8", the project's index in projNames —
-   *  see keyOfIndex/indexOfKey in use-logbook.ts), NOT the display name.
-   *  Two projects in different years can share a display name, so the name
-   *  itself can't be used as a unique key. */
+  /** The owning project's id (Project.id) — NOT the display name. */
   periode: string;
   date: string;
   description: string;
@@ -79,7 +92,7 @@ export interface LukEntry {
   id: string;
   lukId: string;
   criterionId: string;
-  /** Stable project-slot key ("0".."8") — see the note on Entry.periode. */
+  /** The owning project's id (Project.id) — see the note on Entry.periode. */
   periode: string;
   title?: string;
   text: string;
@@ -94,21 +107,11 @@ export interface SkillDataItem {
   tips?: string[];
 }
 
-export interface VisibleProjects {
-  jaar1: number[];
-  jaar2: number[];
-}
-
-export interface OpenYears {
-  jaar1: boolean;
-  jaar2: boolean;
-}
-
 export interface Deadline {
   id: string;
   title: string;
   date: string; // ISO yyyy-mm-dd
-  /** Stable project-slot key ("0".."8") — see the note on Entry.periode. */
+  /** The linked project's id (Project.id), if any. */
   projectKey?: string;
   done?: boolean;
 }
@@ -119,30 +122,18 @@ export interface Reflection {
   text: string;
 }
 
-export interface ProfilePhotoPosition {
-  x: number; // 0-100, used as object-position X
-  y: number; // 0-100, used as object-position Y
-}
-
 export interface AppState {
   view: ViewName;
-  projIdx: number;
+  /** The currently open project's id, or null when no project is open. */
+  projectId: string | null;
   studentName: string;
-  studieJaar: number;
-  visibleProjects: VisibleProjects | null;
-  projNames: string[];
-  projOnboarded: Record<string, boolean>;
+  projects: Project[];
   completedProjects: string[];
-  selectedSkillIds: Record<string, string[]>;
-  lukSelections: Record<string, string[]>;
   skillData: Record<string, Record<string, SkillDataItem>>;
   entries: Entry[];
   lukEntries: LukEntry[];
-  openYears: OpenYears;
   deadlines: Deadline[];
   reflections: Reflection[];
-  profilePhoto: string | null;
-  profilePhotoPosition: ProfilePhotoPosition;
 }
 
 export type ModalState =
@@ -153,7 +144,7 @@ export type ModalState =
   | { type: "lukCritDetail"; lukId: string; criterionId: string; periode: string }
   | { type: "lukDetail"; entryId: string }
   | { type: "lukEntryForm"; lukId: string; criterionId: string; periode: string; editId?: string }
+  | { type: "newProject" }
   | { type: "completeProject"; key: string }
-  | { type: "photoEditor" }
   | { type: "confirm"; msg: string; onOk: () => void }
   | null;

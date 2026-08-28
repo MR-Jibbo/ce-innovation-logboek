@@ -5,12 +5,12 @@ import { AppIcon } from "../components/AppIcon";
 export function ProjectView() {
   const ctx = useLogbookCtx();
   const { state } = ctx;
-  const key = ctx.cur();
-  const hasSkills = state.projIdx < 5;
-  const psi = state.selectedSkillIds[key] || [];
-  const pls = state.lukSelections[key] || [];
-  const chosen = ALL_SKILLS.filter((s) => psi.includes(s.id));
-  const activeLuks = LUK_DEFS.filter((l) => pls.includes(l.id));
+  const project = state.projects.find((p) => p.id === state.projectId);
+  if (!project) return null;
+  const key = project.id;
+  const hasSkills = project.skillIds.length > 0;
+  const chosen = ALL_SKILLS.filter((s) => project.skillIds.includes(s.id));
+  const activeLuks = LUK_DEFS.filter((l) => project.lukIds.includes(l.id));
   const pe = state.entries.filter((e) => e.periode === key);
 
   return (

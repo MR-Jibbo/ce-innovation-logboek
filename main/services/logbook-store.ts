@@ -2,15 +2,18 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { app } from "electron";
 
+export interface LogbookProject {
+  id: string;
+  naam: string;
+  lukIds: string[];
+  skillIds: string[];
+  aangemaaktOp: string;
+}
+
 export interface LogbookData {
-  projNames: string[];
   studentName: string;
-  studieJaar: number;
-  visibleProjects: { jaar1: number[]; jaar2: number[] } | null;
-  projOnboarded: Record<string, boolean>;
+  projects: LogbookProject[];
   completedProjects?: string[];
-  selectedSkillIds: Record<string, string[]>;
-  lukSelections: Record<string, string[]>;
   skillData: Record<string, Record<string, { plan?: string; tips?: string[] }>>;
   entries: Array<{
     id: string;
@@ -33,33 +36,19 @@ export interface LogbookData {
     files: Array<{ id: string; name: string; type: string; dataUrl: string; date: string }>;
     date?: string;
   }>;
-  openYears: { jaar1: boolean; jaar2: boolean };
   deadlines?: Array<{ id: string; title: string; date: string; projectKey?: string; done?: boolean }>;
   reflections?: Array<{ id: string; date: string; text: string }>;
-  profilePhoto?: string | null;
-  profilePhotoPosition?: { x: number; y: number };
 }
 
 const DEFAULT_DATA: LogbookData = {
-  projNames: [
-    "Project 1", "Project 2", "Project 3", "Project 4", "Vrije Ruimte",
-    "Project 1", "Project 2", "Project 3", "Project 4",
-  ],
   studentName: "",
-  studieJaar: 1,
-  visibleProjects: null,
-  projOnboarded: {},
+  projects: [],
   completedProjects: [],
-  selectedSkillIds: {},
-  lukSelections: {},
   skillData: {},
   entries: [],
   lukEntries: [],
-  openYears: { jaar1: true, jaar2: false },
   deadlines: [],
   reflections: [],
-  profilePhoto: null,
-  profilePhotoPosition: { x: 50, y: 50 },
 };
 
 const DATA_FILE_NAME = "logbook-data.json";
@@ -166,7 +155,6 @@ class LogbookStore {
       this.cache = {
         ...DEFAULT_DATA,
         ...parsed,
-        openYears: { ...DEFAULT_DATA.openYears, ...parsed.openYears },
       } as LogbookData;
     } catch (error) {
       if (isFileNotFound(error)) {

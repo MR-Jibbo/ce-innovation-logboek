@@ -77,16 +77,6 @@ export const ALL_SKILLS: SkillDef[] = [
   { id: "s12", name: "Communicatie", color: "#a855f7", desc: "Ideeën, boodschappen, feiten en meningen begrijpelijk en op heldere wijze aan anderen duidelijk maken.", ind: ["Ik spreek en schrijf in goed lopende zinnen, met correcte grammatica.", "Ik vat het besproken stuk helder samen.", "Ik verhelder de eigen boodschap met aansprekende vergelijkingen.", "Ik weet hoofd- en bijzaken goed te scheiden.", "Ik maak gebruik van beelden en digitale mogelijkheden.", "Ik leg complexe zaken stapsgewijs en in simpele bewoordingen uit."] },
 ];
 
-export const DEFAULT_PROJ_NAMES = [
-  "Project 1", "Project 2", "Project 3", "Project 4", "Vrije Ruimte",
-  "Project 1", "Project 2", "Project 3", "Project 4",
-];
-
-export const YEAR_GROUPS = [
-  { id: "jaar1" as const, label: "Jaar 1", indices: [0, 1, 2, 3, 4] },
-  { id: "jaar2" as const, label: "Jaar 2", indices: [5, 6, 7, 8] },
-];
-
 export function uid(prefix: string): string {
   return prefix + "_" + Math.random().toString(36).slice(2, 9);
 }

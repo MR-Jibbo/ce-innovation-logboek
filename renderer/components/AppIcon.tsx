@@ -23,6 +23,8 @@ import {
   User,
   Camera,
   Sparkles,
+  MoreVertical,
+  Search,
   type LucideProps,
 } from "lucide-react";
 
@@ -52,7 +54,9 @@ export type IconName =
   | "reflect"
   | "user"
   | "camera"
-  | "tip";
+  | "tip"
+  | "more"
+  | "search";
 
 const components = {
   settings: Settings,
@@ -79,6 +83,8 @@ const components = {
   user: User,
   camera: Camera,
   tip: Sparkles,
+  more: MoreVertical,
+  search: Search,
 } as const;
 
 export function AppIcon({

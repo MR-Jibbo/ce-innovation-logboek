@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
-import { pk, keyOfIndex, indexOfKey, yearOfIndex, yearSuffix, daysUntilLabel } from "../lib/use-logbook";
+import { projectName, daysUntilLabel } from "../lib/use-logbook";
 import { AppIcon } from "../components/AppIcon";
-import type { Deadline } from "../lib/types";
+import type { Deadline, Project } from "../lib/types";
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -16,9 +16,6 @@ export function PlanningView() {
   const [date, setDate] = useState(todayISO());
   const [projectKey, setProjectKey] = useState("");
   const [titleError, setTitleError] = useState(false);
-
-  const vp = state.visibleProjects || { jaar1: [], jaar2: [] };
-  const projectOptions = [...(vp.jaar1 || []), ...(vp.jaar2 || [])].map((i) => ({ idx: i, name: pk(state.projNames, i) }));
 
   const handleAdd = () => {
     if (!title.trim()) { setTitleError(true); return; }
@@ -63,8 +60,8 @@ export function PlanningView() {
             onChange={(e) => setProjectKey(e.target.value)}
           >
             <option value="">Geen specifiek project</option>
-            {projectOptions.map(({ idx, name }) => (
-              <option key={idx} value={keyOfIndex(idx)}>{name} (Jaar {yearOfIndex(idx)})</option>
+            {state.projects.map((p: Project) => (
+              <option key={p.id} value={p.id}>{p.naam}</option>
             ))}
           </select>
           <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={handleAdd}>
@@ -84,7 +81,7 @@ export function PlanningView() {
             <DeadlineRow
               key={d.id}
               deadline={d}
-              projNames={state.projNames}
+              projects={state.projects}
               onDelete={() => ctx.deleteDeadline(d.id)}
               onToggleDone={() => ctx.toggleDeadlineDone(d.id)}
             />
@@ -100,7 +97,7 @@ export function PlanningView() {
               <DeadlineRow
                 key={d.id}
                 deadline={d}
-                projNames={state.projNames}
+                projects={state.projects}
                 onDelete={() => ctx.deleteDeadline(d.id)}
                 onToggleDone={() => ctx.toggleDeadlineDone(d.id)}
                 muted
@@ -117,7 +114,7 @@ export function PlanningView() {
             <DeadlineRow
               key={d.id}
               deadline={d}
-              projNames={state.projNames}
+              projects={state.projects}
               onDelete={() => ctx.deleteDeadline(d.id)}
               onToggleDone={() => ctx.toggleDeadlineDone(d.id)}
             />
@@ -128,9 +125,9 @@ export function PlanningView() {
   );
 }
 
-function DeadlineRow({ deadline, projNames, onDelete, onToggleDone, muted }: {
+function DeadlineRow({ deadline, projects, onDelete, onToggleDone, muted }: {
   deadline: Deadline;
-  projNames: string[];
+  projects: Project[];
   onDelete: () => void;
   onToggleDone: () => void;
   muted?: boolean;
@@ -181,7 +178,7 @@ function DeadlineRow({ deadline, projNames, onDelete, onToggleDone, muted }: {
             {deadline.title}
           </div>
           <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>
-            {deadline.date}{deadline.projectKey ? ` · ${pk(projNames, indexOfKey(deadline.projectKey))}${yearSuffix(deadline.projectKey)}` : ""}
+            {deadline.date}{deadline.projectKey ? ` · ${projectName(projects, deadline.projectKey)}` : ""}
             {!isDone && (
               <>
                 {" · "}

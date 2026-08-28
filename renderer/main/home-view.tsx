@@ -1,11 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { LogbookCtx, useLogbookCtx } from "../lib/logbook-context";
-import { useLogbook, yearOfIndex } from "../lib/use-logbook";
-import { tipOfTheDay } from "../lib/constants";
+import { useLogbook } from "../lib/use-logbook";
 import { SetupView } from "../views/setup-view";
 import { DashboardView } from "../views/dashboard-view";
 import { ProjectView } from "../views/project-view";
-import { OnboardingView } from "../views/onboarding-view";
 import { ProjectSettingsView } from "../views/project-settings-view";
 import { ProjectsView } from "../views/projects-view";
 import { MomentsView } from "../views/moments-view";
@@ -24,11 +22,11 @@ import type { ViewName } from "../lib/types";
 const NAV_ITEMS: Array<{ view: ViewName; label: string; icon: IconName }> = [
   { view: "home", label: "Dashboard", icon: "dashboard" },
   { view: "projects", label: "Projecten", icon: "projects" },
-  { view: "moments", label: "Ontwikkelmomenten", icon: "moments" },
   { view: "bewijsstukken", label: "Bewijsstukken", icon: "file-text" },
   { view: "skills", label: "Skills", icon: "skills" },
-  { view: "planning", label: "Planning", icon: "planning" },
+  { view: "moments", label: "Ontwikkelmomenten", icon: "moments" },
   { view: "reflectie", label: "Reflectie", icon: "reflect" },
+  { view: "planning", label: "Planning", icon: "planning" },
 ];
 
 // Startup splash: a calm fade-in of the logo + tagline, a shared "inzoom"
@@ -182,10 +180,9 @@ export function HomeView() {
   }
 
   const { state } = logbook;
-  const curYearLabel = ` (Jaar ${yearOfIndex(state.projIdx)})`;
   let topbarTitle = "Dashboard";
-  if (state.view === "proj-settings") topbarTitle = `Projectinstellingen, ${logbook.curName()}${curYearLabel}`;
-  else if (state.view === "project") topbarTitle = `${logbook.curName()}${curYearLabel}`;
+  if (state.view === "proj-settings") topbarTitle = `Projectinstellingen, ${logbook.curName()}`;
+  else if (state.view === "project") topbarTitle = logbook.curName();
   else if (state.view === "projects") topbarTitle = "Projecten";
   else if (state.view === "moments") topbarTitle = "Ontwikkelmomenten";
   else if (state.view === "bewijsstukken") topbarTitle = "Bewijsstukken";
@@ -194,8 +191,7 @@ export function HomeView() {
   else if (state.view === "reflectie") topbarTitle = "Reflectie";
   else if (state.view === "profile") topbarTitle = "Instellingen";
 
-  const showProjectActions =
-    state.view === "project" && state.projOnboarded[logbook.cur()];
+  const showProjectActions = state.view === "project" && !!logbook.curProject();
 
   return (
     <LogbookCtx.Provider value={logbook}>
@@ -230,29 +226,13 @@ export function HomeView() {
           <div className="sb-bottom">
             <UpdateBanner />
 
-            <div className="sb-tip">
-              <div className="sb-tip-title">
-                <AppIcon name="tip" size="xs" strokeWidth={2} /> Tip van vandaag
-              </div>
-              <p className="sb-tip-text">{tipOfTheDay()}</p>
-            </div>
-
             <button
               className={`sb-profile-card${state.view === "profile" ? " active" : ""}`}
               onClick={() => logbook.navigate("profile")}
             >
-              {state.profilePhoto ? (
-                <img
-                  src={state.profilePhoto}
-                  alt=""
-                  className="sb-profile-avatar"
-                  style={{ objectPosition: `${state.profilePhotoPosition.x}% ${state.profilePhotoPosition.y}%` }}
-                />
-              ) : (
-                <div className="sb-profile-avatar sb-profile-avatar-fallback">
-                  <AppIcon name="user" size="sm" />
-                </div>
-              )}
+              <div className="sb-profile-avatar sb-profile-avatar-fallback">
+                <AppIcon name="user" size="sm" />
+              </div>
               <div className="sb-profile-info">
                 <div className="sb-profile-name">{state.studentName || "Naam instellen"}</div>
               </div>
@@ -283,33 +263,8 @@ export function HomeView() {
             <div className="topbar-actions">
               {showProjectActions && (
                 <>
-                  <button
-                    className="btn btn-ghost"
-                    style={{ fontSize: "var(--fs-sm)", padding: "6px 12px" }}
-                    onClick={() => logbook.navigate("proj-settings")}
-                  >
-                    <AppIcon name="settings" size="xs" />
-                    Projectinstellingen
-                  </button>
-                  {state.completedProjects.includes(logbook.cur()) ? (
-                    <button
-                      className="btn btn-ghost"
-                      style={{ fontSize: "var(--fs-sm)", padding: "6px 12px" }}
-                      onClick={() => logbook.reopenProject(logbook.cur())}
-                    >
-                      Heropenen
-                    </button>
-                  ) : (
-                    <button
-                      className="btn btn-ghost"
-                      style={{ fontSize: "var(--fs-sm)", padding: "6px 12px" }}
-                      onClick={() => logbook.setModal({ type: "completeProject", key: logbook.cur() })}
-                    >
-                      <AppIcon name="check" size="xs" strokeWidth={2.5} />
-                      Afronden
-                    </button>
-                  )}
                   <ExportMenu logbook={logbook} />
+                  <ProjectActionsMenu logbook={logbook} />
                 </>
               )}
             </div>
@@ -464,11 +419,7 @@ function MainContent() {
 
   if (state.view === "home") return <DashboardView />;
   if (state.view === "proj-settings") return <ProjectSettingsView />;
-  if (state.view === "project") {
-    const key = ctx.cur();
-    if (!state.projOnboarded[key]) return <OnboardingView />;
-    return <ProjectView />;
-  }
+  if (state.view === "project") return <ProjectView />;
   if (state.view === "projects") return <ProjectsView />;
   if (state.view === "moments") return <MomentsView />;
   if (state.view === "bewijsstukken") return <BewijsstukkenView />;
@@ -540,6 +491,67 @@ function ExportMenu({ logbook }: { logbook: LogbookContext }) {
             <AppIcon name="file-text" size="sm" />
             <span>Exporteren als Word</span>
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** "···"-overflow-menu voor de projecttopbar: Projectinstellingen + Afronden/Heropenen samen. */
+function ProjectActionsMenu({ logbook }: { logbook: LogbookContext }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { state } = logbook;
+  const key = logbook.cur();
+  const isCompleted = state.completedProjects.includes(key);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={menuRef} style={{ position: "relative" }}>
+      <button
+        className="btn-icon"
+        style={{ padding: "6px 10px" }}
+        onClick={() => setOpen(!open)}
+        title="Meer acties"
+      >
+        <AppIcon name="more" size="sm" />
+      </button>
+      {open && (
+        <div className="export-dropdown">
+          <button
+            className="export-dropdown-item"
+            onClick={() => { setOpen(false); logbook.navigate("proj-settings"); }}
+          >
+            <AppIcon name="settings" size="sm" />
+            <span>Projectinstellingen</span>
+          </button>
+          {isCompleted ? (
+            <button
+              className="export-dropdown-item"
+              onClick={() => { setOpen(false); logbook.reopenProject(key); }}
+            >
+              <AppIcon name="chevron-left" size="sm" />
+              <span>Heropenen</span>
+            </button>
+          ) : (
+            <button
+              className="export-dropdown-item"
+              onClick={() => { setOpen(false); logbook.setModal({ type: "completeProject", key }); }}
+            >
+              <AppIcon name="check" size="sm" />
+              <span>Afronden</span>
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -140,10 +140,9 @@ function formatExportDate(d: Date): string {
   return d.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
 }
 
-/** Resolves a project's display name from its stable index-based storage key ("0".."8"). */
+/** Resolves a project's display name from its id. */
 function resolveProjectName(data: LogbookData, projectKey: string): string {
-  const idx = Number(projectKey);
-  return (Number.isInteger(idx) ? data.projNames[idx] : undefined) || projectKey;
+  return data.projects.find((p) => p.id === projectKey)?.naam || projectKey;
 }
 
 // ─── Export data model ──────────────────────────────────────────────────────
@@ -202,13 +201,13 @@ interface ExportModel {
 }
 
 /**
- * `projectKey` is the project's stable storage key ("0".."8", its index in
- * projNames — see keyOfIndex/indexOfKey in renderer/lib/use-logbook.ts),
- * used to filter entries/lukEntries/selections. The display name shown on
- * the cover page etc. is resolved separately via projNames.
+ * `projectKey` is the project's id (Project.id), used to filter
+ * entries/lukEntries and to look up the project's own LUK/skill koppeling.
+ * The display name shown on the cover page etc. is resolved separately.
  */
 function buildExportModel(data: LogbookData, allSkills: SkillDef[], lukDefs: LukDef[], projectKey: string): ExportModel {
-  const psi = data.selectedSkillIds[projectKey] || [];
+  const project = data.projects.find((p) => p.id === projectKey);
+  const psi = project?.skillIds || [];
   const chosenSkills = allSkills.filter((s) => psi.includes(s.id));
   const pe = data.entries.filter((e) => e.periode === projectKey);
 
@@ -229,7 +228,7 @@ function buildExportModel(data: LogbookData, allSkills: SkillDef[], lukDefs: Luk
     };
   });
 
-  const ls = data.lukSelections[projectKey] || [];
+  const ls = project?.lukIds || [];
   const chosenLuks = lukDefs.filter((l) => ls.includes(l.id));
   const attachments: AttachmentInfo[] = [];
 

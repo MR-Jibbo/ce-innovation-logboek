@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type ReactNode } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
-import { pk, indexOfKey } from "../lib/use-logbook";
+import { projectName } from "../lib/use-logbook";
 import { ALL_SKILLS, LUK_DEFS, STATUS, uid } from "../lib/constants";
 import type { LukFile, StatusKey, ActionItem } from "../lib/types";
 import { AppIcon } from "../components/AppIcon";
@@ -52,9 +52,9 @@ export function ModalRenderer() {
       size = "sm";
       box = <CompleteProjectModal projectKey={modal.key} onClose={close} />;
       break;
-    case "photoEditor":
-      size = "sm";
-      box = <PhotoEditorModal onClose={close} />;
+    case "newProject":
+      size = "md";
+      box = <NewProjectModal onClose={close} />;
       break;
     default:
       return null;
@@ -298,7 +298,7 @@ function EntryFormModal({ skillId, periode, editId, onClose }: {
   const ctx = useLogbookCtx();
   const existing = editId ? ctx.state.entries.find((e) => e.id === editId) : null;
   const fixedP = periode || ctx.cur();
-  const fixedPName = pk(ctx.state.projNames, indexOfKey(fixedP));
+  const fixedPName = projectName(ctx.state.projects, fixedP);
   const skill = ALL_SKILLS.find((s) => s.id === (existing?.skillId || skillId));
 
   const [title, setTitle] = useState(existing?.title || "");
@@ -738,7 +738,7 @@ function SkillIndicatorsModal({ skillId, onClose }: { skillId: string; onClose: 
 // ─── Complete Project Modal ──────────────────────────────────────────────────────
 function CompleteProjectModal({ projectKey, onClose }: { projectKey: string; onClose: () => void }) {
   const ctx = useLogbookCtx();
-  const displayName = pk(ctx.state.projNames, indexOfKey(projectKey));
+  const displayName = projectName(ctx.state.projects, projectKey);
 
   const handleKeep = () => {
     ctx.completeProject(projectKey);
@@ -802,120 +802,108 @@ function CompleteProjectModal({ projectKey, onClose }: { projectKey: string; onC
   );
 }
 
-// ─── Photo Editor Modal (profielfoto: positie + vervangen) ─────────────────────
-function PhotoEditorModal({ onClose }: { onClose: () => void }) {
+// ─── New Project Modal (vrije projectaanmaak) ───────────────────────────────────
+function NewProjectModal({ onClose }: { onClose: () => void }) {
   const ctx = useLogbookCtx();
-  const { state } = ctx;
-  const photoPos = state.profilePhotoPosition || { x: 50, y: 50 };
+  const [naam, setNaam] = useState("");
+  const [naamError, setNaamError] = useState(false);
+  const [lukIds, setLukIds] = useState<string[]>([]);
+  const [lukError, setLukError] = useState(false);
+  const [skillsEnabled, setSkillsEnabled] = useState(false);
+  const [skillIds, setSkillIds] = useState<string[]>([]);
 
-  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        // Keep it small — this is stored inline in logbook-data.json.
-        const max = 320;
-        let w = img.width, h = img.height;
-        if (w > max || h > max) {
-          if (w > h) { h = Math.round(h * (max / w)); w = max; }
-          else { w = Math.round(w * (max / h)); h = max; }
-        }
-        const cv = document.createElement("canvas");
-        cv.width = w; cv.height = h;
-        cv.getContext("2d")!.drawImage(img, 0, 0, w, h);
-        ctx.setProfilePhoto(cv.toDataURL("image/jpeg", 0.85));
-        ctx.setProfilePhotoPosition({ x: 50, y: 50 });
-      };
-      img.src = ev.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
+  const toggleLuk = (id: string) => {
+    setLukIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      if (next.length > 0) setLukError(false);
+      return next;
+    });
+  };
+  const toggleSkill = (id: string) => {
+    setSkillIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
+
+  const handleCreate = () => {
+    const trimmed = naam.trim();
+    if (!trimmed) { setNaamError(true); return; }
+    if (lukIds.length === 0) { setLukError(true); return; }
+    ctx.createProject(trimmed, lukIds, skillsEnabled ? skillIds : []);
+    onClose();
   };
 
   return (
     <>
-      <ModalHeader title="Profielfoto" onClose={onClose} />
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: "18px" }}>
-        {state.profilePhoto ? (
-          <img
-            src={state.profilePhoto}
-            alt=""
-            className="profile-avatar-lg"
-            style={{ width: "96px", height: "96px", objectPosition: `${photoPos.x}% ${photoPos.y}%` }}
-          />
-        ) : (
-          <div className="profile-avatar-lg profile-avatar-lg-fallback" style={{ width: "96px", height: "96px" }}>
-            <AppIcon name="user" size="xl" />
-          </div>
-        )}
-      </div>
+      <ModalHeader title="Nieuw project" onClose={onClose} />
+      <FieldLabel label="Naam van het project">
+        <input
+          type="text"
+          className={`input${naamError ? " error" : ""}`}
+          placeholder="Bijv. 'Duurzame verpakking herontwerpen'"
+          value={naam}
+          onChange={(e) => { setNaam(e.target.value); setNaamError(false); }}
+        />
+      </FieldLabel>
 
-      {state.profilePhoto && (
-        <div style={{ marginBottom: "18px" }}>
-          <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", marginBottom: "8px" }}>
-            Positionering van de foto
-          </p>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-            <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", width: "58px", flexShrink: 0 }}>Horizontaal</span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={photoPos.x}
-              style={{ flex: 1 }}
-              onChange={(e) => ctx.setProfilePhotoPosition({ ...photoPos, x: Number(e.target.value) })}
-            />
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", width: "58px", flexShrink: 0 }}>Verticaal</span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={photoPos.y}
-              style={{ flex: 1 }}
-              onChange={(e) => ctx.setProfilePhotoPosition({ ...photoPos, y: Number(e.target.value) })}
-            />
-          </div>
+      <p className="field-label">Leeruitkomsten (verplicht, kies er minstens 1)</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 260px), 1fr))", gap: "10px", marginBottom: "6px" }}>
+        {LUK_DEFS.map((luk) => {
+          const sel = lukIds.includes(luk.id);
+          return (
+            <div
+              key={luk.id}
+              className={`onboard-card${sel ? " sel" : ""}`}
+              onClick={() => toggleLuk(luk.id)}
+            >
+              <div className="flex-between" style={{ marginBottom: "5px" }}>
+                <span style={{ fontWeight: "var(--fw-bold)", fontSize: "var(--fs-sm)" }}>{luk.name}</span>
+                {sel && <span style={{ color: "var(--pink)" }}><AppIcon name="check" size="sm" strokeWidth={2.5} /></span>}
+              </div>
+              <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>{luk.criteria.length} succescriteria</p>
+            </div>
+          );
+        })}
+      </div>
+      {lukError && (
+        <p style={{ fontSize: "var(--fs-sm)", color: "var(--danger)", marginBottom: "10px" }}>
+          Kies minstens één leeruitkomst.
+        </p>
+      )}
+
+      <label className="flex-center" style={{ gap: "8px", marginTop: "16px", marginBottom: skillsEnabled ? "10px" : "18px", cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          checked={skillsEnabled}
+          onChange={(e) => setSkillsEnabled(e.target.checked)}
+        />
+        <span style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-semibold)" }}>Skills toevoegen aan dit project</span>
+      </label>
+      {skillsEnabled && (
+        <div className="grid-3" style={{ marginBottom: "18px" }}>
+          {ALL_SKILLS.map((sk) => {
+            const sel = skillIds.includes(sk.id);
+            return (
+              <div
+                key={sk.id}
+                className="onboard-card"
+                style={sel ? { borderColor: sk.color, background: `${sk.color}08` } : {}}
+                onClick={() => toggleSkill(sk.id)}
+              >
+                <div className="flex-between">
+                  <div className="dot-row" style={{ gap: "6px" }}>
+                    <span className="dot" style={{ width: "8px", height: "8px", background: sk.color }} />
+                    <span style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-semibold)" }}>{sk.name}</span>
+                  </div>
+                  {sel && <span style={{ color: sk.color }}><AppIcon name="check" size="sm" strokeWidth={2.5} /></span>}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      <label
-        className="btn-ghost"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "6px",
-          width: "100%",
-          boxSizing: "border-box",
-          padding: "10px 14px",
-          cursor: "pointer",
-          marginBottom: "8px",
-        }}
-      >
-        <AppIcon name="camera" size="xs" /> {state.profilePhoto ? "Andere foto uploaden" : "Foto uploaden"}
-        <input type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
-      </label>
-      {state.profilePhoto && (
-        <button
-          className="btn-ghost"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "100%",
-            boxSizing: "border-box",
-            padding: "10px 14px",
-            color: "var(--danger)",
-          }}
-          onClick={() => { ctx.setProfilePhoto(null); onClose(); }}
-        >
-          Foto verwijderen
-        </button>
-      )}
+      <button className="btn btn-primary" style={{ width: "100%" }} onClick={handleCreate}>
+        Project aanmaken
+      </button>
     </>
   );
 }

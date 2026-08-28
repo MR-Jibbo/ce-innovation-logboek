@@ -1,61 +1,54 @@
 import { useLogbookCtx } from "../lib/logbook-context";
-import { pk, keyOfIndex } from "../lib/use-logbook";
-import { YEAR_GROUPS, PROJ_COLORS } from "../lib/constants";
+import { PROJ_COLORS } from "../lib/constants";
+import { AppIcon } from "../components/AppIcon";
 import type { Entry, LukEntry } from "../lib/types";
 
 export function ProjectsView() {
   const ctx = useLogbookCtx();
   const { state } = ctx;
-  const vp = state.visibleProjects || { jaar1: [], jaar2: [] };
 
   return (
     <div className="animate-fade-in">
-      {YEAR_GROUPS.map((yr) => {
-        const indices = (vp[yr.id] || []) as number[];
-        if (indices.length === 0) return null;
-        return (
-          <div key={yr.id} style={{ marginBottom: "28px" }}>
-            <h2 className="section-title">{yr.label}</h2>
-            <div className="grid-2">
-              {indices.map((idx) => {
-                const nm = pk(state.projNames, idx);
-                const pid = keyOfIndex(idx);
-                const pe = state.entries.filter((e: Entry) => e.periode === pid);
-                const pl = state.lukEntries.filter((e: LukEntry) => e.periode === pid);
-                const onboarded = state.projOnboarded[pid];
-                const completed = state.completedProjects.includes(pid);
-                return (
-                  <div
-                    key={idx}
-                    className="card clickable-card"
-                    onClick={() => ctx.navigate("project", idx)}
-                  >
-                    <div className="flex-between" style={{ marginBottom: "8px" }}>
-                      <div className="dot-row">
-                        <span className="dot" style={{ width: "10px", height: "10px", background: PROJ_COLORS[idx % PROJ_COLORS.length] }} />
-                        <span style={{ fontWeight: "var(--fw-bold)", fontSize: "var(--fs-md)" }}>{nm}</span>
-                      </div>
-                      {completed ? (
-                        <span className="chip chip-green" style={{ fontSize: "var(--fs-xs)" }}>Afgerond</span>
-                      ) : !onboarded ? (
-                        <span className="chip chip-gray" style={{ fontSize: "var(--fs-xs)" }}>Nog niet gestart</span>
-                      ) : null}
-                    </div>
-                    <div className="flex-center" style={{ gap: "16px", fontSize: "var(--fs-sm)", color: "var(--text-secondary)" }}>
-                      {idx < 5 && <span>{pe.length} ontwikkelmomenten</span>}
-                      <span>{pl.length} bewijsstukken</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
+      <div className="flex-between" style={{ marginBottom: "18px" }}>
+        <h2 className="section-title" style={{ margin: 0 }}>Projecten</h2>
+        <button className="btn btn-primary" onClick={() => ctx.setModal({ type: "newProject" })}>
+          <AppIcon name="plus" size="xs" strokeWidth={2.5} /> Nieuw project
+        </button>
+      </div>
 
-      {(vp.jaar1?.length || 0) === 0 && (vp.jaar2?.length || 0) === 0 && (
+      {state.projects.length === 0 ? (
         <div className="card" style={{ color: "var(--text-tertiary)", textAlign: "center", padding: "36px" }}>
-          Geen projecten geselecteerd. Pas dit aan via je Profiel.
+          <p style={{ marginBottom: "10px" }}>Nog geen projecten aangemaakt.</p>
+          <button className="btn-link" onClick={() => ctx.setModal({ type: "newProject" })}>
+            Maak je eerste project aan →
+          </button>
+        </div>
+      ) : (
+        <div className="grid-2">
+          {state.projects.map((p, i) => {
+            const pe = state.entries.filter((e: Entry) => e.periode === p.id);
+            const pl = state.lukEntries.filter((e: LukEntry) => e.periode === p.id);
+            const completed = state.completedProjects.includes(p.id);
+            const itemCount = pe.length + pl.length;
+            return (
+              <div
+                key={p.id}
+                className="card clickable-card"
+                onClick={() => ctx.navigate("project", p.id)}
+              >
+                <div className="flex-between" style={{ marginBottom: "8px" }}>
+                  <div className="dot-row">
+                    <span className="dot" style={{ width: "10px", height: "10px", background: PROJ_COLORS[i % PROJ_COLORS.length] }} />
+                    <span style={{ fontWeight: "var(--fw-bold)", fontSize: "var(--fs-md)" }}>{p.naam}</span>
+                  </div>
+                  {completed && <span className="chip chip-green" style={{ fontSize: "var(--fs-xs)" }}>Afgerond</span>}
+                </div>
+                <div style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)" }}>
+                  {itemCount} item{itemCount !== 1 ? "s" : ""}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

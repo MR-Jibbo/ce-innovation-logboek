@@ -88,7 +88,6 @@ function LocationStep() {
 function ProfileStep() {
   const ctx = useLogbookCtx();
   const [name, setName] = useState(ctx.state.studentName || "");
-  const [jaar, setJaar] = useState(ctx.state.studieJaar || 1);
   const [error, setError] = useState(false);
 
   const handleSave = () => {
@@ -97,7 +96,7 @@ function ProfileStep() {
       setError(true);
       return;
     }
-    ctx.completeSetup(trimmed, jaar);
+    ctx.completeSetup(trimmed);
   };
 
   return (
@@ -144,20 +143,6 @@ function ProfileStep() {
           }}
           onKeyDown={(e) => e.key === "Enter" && handleSave()}
         />
-
-        {/* Year selection */}
-        <p className="field-label" style={{ marginBottom: "10px" }}>In welk jaar zit je?</p>
-        <div style={{ display: "flex", gap: "10px", marginBottom: "22px" }}>
-          {[1, 2].map((j) => (
-            <button
-              key={j}
-              className={`seg-btn${jaar === j ? " sel" : ""}`}
-              onClick={() => setJaar(j)}
-            >
-              Jaar {j}
-            </button>
-          ))}
-        </div>
 
         {/* Save button */}
         <button
