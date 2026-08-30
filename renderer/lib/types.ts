@@ -78,6 +78,11 @@ export interface Entry {
   reflection: string;
   actionItems: ActionItem[];
   status: StatusKey;
+  /** Full ISO timestamp, stamped automatically on creation (see addEntry) —
+   *  used only for the relative "X minuten/uur/dagen geleden"-label in de
+   *  dashboard's "Recente activiteiten". Optional so older data without it
+   *  still loads fine (falls back to `date`). Never edited by the student. */
+  createdAt?: string;
 }
 
 export interface LukFile {
@@ -100,6 +105,10 @@ export interface LukEntry {
   /** ISO yyyy-mm-dd, stamped automatically on creation (see addLukEntry) —
    *  used to place bewijsstukken in the dashboard's "Recente activiteiten". */
   date?: string;
+  /** Full ISO timestamp, stamped automatically on creation (see addLukEntry) —
+   *  used only for the relative "X minuten/uur/dagen geleden"-label. Optional
+   *  so older data without it still loads fine (falls back to `date`). */
+  createdAt?: string;
 }
 
 export interface SkillDataItem {

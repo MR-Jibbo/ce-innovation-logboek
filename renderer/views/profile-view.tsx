@@ -3,6 +3,7 @@ import { useLogbookCtx } from "../lib/logbook-context";
 import { AppIcon } from "../components/AppIcon";
 import { getThemePreference, setThemePreference, type ThemePreference } from "../lib/theme";
 import { getFontScale, setFontScale, FONT_SCALE_MIN, FONT_SCALE_MAX, FONT_SCALE_STEP, FONT_SCALE_DEFAULT } from "../lib/font-size";
+import { getCelebrationEnabled, setCelebrationEnabled } from "../lib/celebration-setting";
 
 export function ProfileView() {
   const ctx = useLogbookCtx();
@@ -12,6 +13,7 @@ export function ProfileView() {
   const [folderMoved, setFolderMoved] = useState(false);
   const [theme, setTheme] = useState<ThemePreference>(getThemePreference());
   const [fontScale, setFontScaleState] = useState<number>(getFontScale());
+  const [celebration, setCelebrationState] = useState<boolean>(getCelebrationEnabled());
 
   const THEME_OPTIONS: { key: ThemePreference; label: string }[] = [
     { key: "light", label: "Licht" },
@@ -27,6 +29,11 @@ export function ProfileView() {
   const handleFontScaleChange = (scale: number) => {
     setFontScaleState(scale);
     setFontScale(scale);
+  };
+
+  const handleCelebrationChange = (enabled: boolean) => {
+    setCelebrationState(enabled);
+    setCelebrationEnabled(enabled);
   };
 
   const handleChangeFolder = async () => {
@@ -148,6 +155,30 @@ export function ProfileView() {
             Standaard herstellen
           </button>
         )}
+      </div>
+
+      {/* Bevestigingsanimatie */}
+      <div className="card" style={{ marginBottom: "18px" }}>
+        <h2 style={{ fontSize: "var(--fs-md)", fontWeight: "var(--fw-bold)", marginBottom: "4px" }}>
+          Bevestigingsanimatie
+        </h2>
+        <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-tertiary)", marginBottom: "14px" }}>
+          Een kort, niet-blokkerend animatietje wanneer je een ontwikkelmoment of bewijsstuk toevoegt.
+        </p>
+        <div className="flex-center" style={{ gap: "10px" }}>
+          <button
+            className={`seg-btn${celebration ? " sel" : ""}`}
+            onClick={() => handleCelebrationChange(true)}
+          >
+            Aan
+          </button>
+          <button
+            className={`seg-btn${!celebration ? " sel" : ""}`}
+            onClick={() => handleCelebrationChange(false)}
+          >
+            Uit
+          </button>
+        </div>
       </div>
 
       {/* Disclaimer */}

@@ -1139,3 +1139,39 @@ textarea.input { resize: vertical; line-height: 1.5; }
   width: 100%;
   height: auto;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   "Laatst bijgewerkt: X geleden" — puur informatief stilte-indicatortje bij
+   een project (dashboard-rij + projectpagina). Nooit een aansporing, alleen
+   een geleidelijk iets opvallendere kleur naarmate het langer stil is.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.stale-neutral { color: var(--text-tertiary); }
+.stale-warm { color: #b45309; }
+.stale-hot { color: #c2410c; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Bevestigingsanimatie bij het loggen van een moment — viert alleen de
+   handeling zelf (dat er iets is vastgelegd), nooit de inhoud of voortgang.
+   Non-blocking, geen tekst, geen streak-teller. Uit te zetten in Instellingen.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.celebration-layer {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 9999;
+}
+.celebration-piece {
+  position: absolute;
+  top: -12px;
+  border-radius: 2px;
+  animation-name: celebration-fall;
+  animation-timing-function: ease-in;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+}
+@keyframes celebration-fall {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: 1; }
+  100% { transform: translate(var(--cel-drift), var(--cel-fall)) rotate(var(--cel-rotate)); opacity: 0; }
+}

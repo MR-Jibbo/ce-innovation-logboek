@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
-import { getGreeting, projectName, daysUntilLabel } from "../lib/use-logbook";
+import { getGreeting, projectName, daysUntilLabel, relativeTimeLabel, lastActivityDate, stalenessClass } from "../lib/use-logbook";
 import { PROJ_COLORS, LUK_DEFS } from "../lib/constants";
 import { AppIcon } from "../components/AppIcon";
 import type { Entry, LukEntry, Deadline } from "../lib/types";
@@ -16,6 +16,10 @@ interface RecentActivity {
   title: string;
   periode: string;
   date: string;
+  /** Full ISO timestamp used for the relative "X geleden"-label and for
+   *  sorting — falls back to `date` at noon for items logged before this
+   *  field existed. */
+  createdAt: string;
   kind: "moment" | "bewijs";
 }
 
@@ -29,15 +33,15 @@ export function DashboardView() {
   // samengevoegd op datum.
   const momentActivities: RecentActivity[] = state.entries
     .filter((e: Entry) => e.date)
-    .map((e: Entry) => ({ id: e.id, title: e.title, periode: e.periode, date: e.date, kind: "moment" }));
+    .map((e: Entry) => ({ id: e.id, title: e.title, periode: e.periode, date: e.date, createdAt: e.createdAt || `${e.date}T12:00:00`, kind: "moment" }));
   const bewijsActivities: RecentActivity[] = state.lukEntries
     .filter((e: LukEntry) => e.date)
     .map((e: LukEntry) => {
       const luk = LUK_DEFS.find((l) => l.id === e.lukId);
       const crit = luk?.criteria.find((c) => c.id === e.criterionId);
-      return { id: e.id, title: e.title || crit?.title || "Bewijsstuk", periode: e.periode, date: e.date as string, kind: "bewijs" };
+      return { id: e.id, title: e.title || crit?.title || "Bewijsstuk", periode: e.periode, date: e.date as string, createdAt: e.createdAt || `${e.date}T12:00:00`, kind: "bewijs" };
     });
-  const recentEntriesAll = [...momentActivities, ...bewijsActivities].sort((a, b) => b.date.localeCompare(a.date));
+  const recentEntriesAll = [...momentActivities, ...bewijsActivities].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const recentEntries = recentExpanded ? recentEntriesAll : recentEntriesAll.slice(0, RECENT_PAGE_SIZE);
 
   const today = todayISO();
@@ -66,6 +70,7 @@ export function DashboardView() {
               state.entries.filter((e: Entry) => e.periode === p.id).length +
               state.lukEntries.filter((e: LukEntry) => e.periode === p.id).length;
             const completed = state.completedProjects.includes(p.id);
+            const lastActive = lastActivityDate(state, p.id);
             return (
               <button
                 key={p.id}
@@ -88,6 +93,11 @@ export function DashboardView() {
                     <AppIcon name="chevron-right" size="xs" />
                   </div>
                 </div>
+                {!completed && (
+                  <p className={stalenessClass(lastActive)} style={{ fontSize: "var(--fs-xs)", margin: "4px 0 0 18px" }}>
+                    Laatst bijgewerkt: {daysUntilLabel(lastActive)}
+                  </p>
+                )}
               </button>
             );
           })}
@@ -116,10 +126,15 @@ export function DashboardView() {
                   style={{ width: "100%" }}
                   onClick={() => ctx.setModal(e.kind === "moment" ? { type: "entryDetail", entryId: e.id } : { type: "lukDetail", entryId: e.id })}
                 >
-                  <div className="flex-between">
+                  <div className="flex-between" style={{ gap: "10px" }}>
                     <span style={{ fontSize: "var(--fs-sm)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{e.title}</span>
-                    <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", flexShrink: 0 }}>
-                      {projectName(state.projects, e.periode)}
+                    <span style={{ textAlign: "right", flexShrink: 0 }}>
+                      <span style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--text-tertiary)" }}>
+                        {projectName(state.projects, e.periode)}
+                      </span>
+                      <span style={{ display: "block", fontSize: "var(--fs-xs)", color: "var(--text-faint)" }}>
+                        {relativeTimeLabel(e.createdAt)}
+                      </span>
                     </span>
                   </div>
                 </button>

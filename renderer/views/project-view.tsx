@@ -1,5 +1,6 @@
 import { useLogbookCtx } from "../lib/logbook-context";
 import { ALL_SKILLS, LUK_DEFS } from "../lib/constants";
+import { daysUntilLabel, lastActivityDate, stalenessClass } from "../lib/use-logbook";
 import { AppIcon } from "../components/AppIcon";
 
 export function ProjectView() {
@@ -12,9 +13,16 @@ export function ProjectView() {
   const chosen = ALL_SKILLS.filter((s) => project.skillIds.includes(s.id));
   const activeLuks = LUK_DEFS.filter((l) => project.lukIds.includes(l.id));
   const pe = state.entries.filter((e) => e.periode === key);
+  const isCompleted = state.completedProjects.includes(key);
+  const lastActive = lastActivityDate(state, key);
 
   return (
     <div className="animate-fade-in">
+      {!isCompleted && (
+        <p className={stalenessClass(lastActive)} style={{ fontSize: "var(--fs-sm)", marginBottom: "16px" }}>
+          Laatst bijgewerkt: {daysUntilLabel(lastActive)}
+        </p>
+      )}
       <div className="grid-fixed-2" style={{ alignItems: "start" }}>
         {/* Skills column */}
         {hasSkills && (

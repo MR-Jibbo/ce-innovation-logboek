@@ -47,6 +47,14 @@ export function useLogbook() {
   const [setupStep, setSetupStep] = useState<"location" | "profile">("location");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ─── Bevestigingsanimatie ("confetti") ─────────────────────────────────────
+  // A simple counter that ticks up each time a new ontwikkelmoment/bewijsstuk
+  // is logged — HomeView watches it to briefly show a non-blocking celebration
+  // burst. A counter (rather than a boolean) so two celebrations fired back to
+  // back both register, even if the first animation hasn't finished yet.
+  const [celebrateTick, setCelebrateTick] = useState(0);
+  const triggerCelebration = useCallback(() => setCelebrateTick((t) => t + 1), []);
+
   // On mount: figure out if a data folder was already chosen (and still
   // exists). If not, the setup screen's first step asks the user to pick
   // one before we can load/save anything.
@@ -208,7 +216,7 @@ export function useLogbook() {
   const addEntry = useCallback((entry: Omit<Entry, "id">) => {
     update((prev) => ({
       ...prev,
-      entries: [...prev.entries, { ...entry, id: uid("e") }],
+      entries: [...prev.entries, { ...entry, id: uid("e"), createdAt: new Date().toISOString() }],
     }));
   }, [update]);
 
@@ -241,8 +249,9 @@ export function useLogbook() {
     update((prev) => ({
       ...prev,
       // Auto-stamp a creation date (ISO, like Entry.date) so bewijsstukken
-      // can be placed in the dashboard's "Recente activiteiten" feed.
-      lukEntries: [...prev.lukEntries, { ...entry, id: uid("le"), date: entry.date || new Date().toISOString().slice(0, 10) }],
+      // can be placed in the dashboard's "Recente activiteiten" feed, plus a
+      // full timestamp for the relative "X geleden"-label.
+      lukEntries: [...prev.lukEntries, { ...entry, id: uid("le"), date: entry.date || new Date().toISOString().slice(0, 10), createdAt: new Date().toISOString() }],
     }));
   }, [update]);
 
@@ -432,6 +441,8 @@ export function useLogbook() {
     pickDataFolder,
     confirmDataFolder,
     changeDataFolder,
+    celebrateTick,
+    triggerCelebration,
   };
 }
 
@@ -467,4 +478,61 @@ export function getGreeting(name: string): string {
   const h = new Date().getHours();
   const g = h >= 6 && h < 12 ? "Goedemorgen" : h >= 12 && h < 18 ? "Goedemiddag" : "Goedenavond";
   return name ? `${g}, ${name}` : g;
+}
+
+/**
+ * "X minuten/uur/dagen geleden" for a full ISO timestamp, with an exact
+ * (non-rounded) unit boundary: under 60 minutes shows minutes, 60 minutes up
+ * to 24 hours shows hours, 24 hours and beyond shows days. Reusable anywhere
+ * a moment-in-time needs a relative label (currently: dashboard "Recente
+ * activiteiten"). Dutch singular/plural: "1 minuut" / "2 minuten", "1 uur" /
+ * "2 uur" (uur is invariant), "1 dag" / "2 dagen".
+ */
+export function relativeTimeLabel(iso: string): string {
+  const diffMs = Math.max(0, Date.now() - new Date(iso).getTime());
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 60) {
+    return minutes === 1 ? "1 minuut geleden" : `${minutes} minuten geleden`;
+  }
+  const hours = Math.floor(diffMs / 3600000);
+  if (hours < 24) {
+    return `${hours} uur geleden`;
+  }
+  const days = Math.floor(diffMs / 86400000);
+  return days === 1 ? "1 dag geleden" : `${days} dagen geleden`;
+}
+
+/**
+ * Latest logged activity date (yyyy-mm-dd) for a project — the newest
+ * ontwikkelmoment/bewijsstuk date, or the project's own creation date when
+ * nothing has been logged in it yet. Used for the neutral "stilte"-indicator
+ * (see stalenessClass) — never for anything performance-related.
+ */
+export function lastActivityDate(
+  data: { entries: Entry[]; lukEntries: LukEntry[]; projects: Project[] },
+  projectId: string,
+): string {
+  const dates = [
+    ...data.entries.filter((e) => e.periode === projectId && e.date).map((e) => e.date),
+    ...data.lukEntries.filter((e) => e.periode === projectId && e.date).map((e) => e.date as string),
+  ];
+  if (dates.length === 0) {
+    const project = data.projects.find((p) => p.id === projectId);
+    return project?.aangemaaktOp || new Date().toISOString().slice(0, 10);
+  }
+  dates.sort();
+  return dates[dates.length - 1];
+}
+
+/**
+ * Purely visual "how long has it been quiet"-tier for a last-activity date —
+ * neutral by default, gradually a bit more noticeable the longer it's been.
+ * This is informational only ("het is een tijdje stil"), never a judgement
+ * ("je loopt achter") — see the .stale-* classes in styles.css.
+ */
+export function stalenessClass(dateStr: string): "stale-neutral" | "stale-warm" | "stale-hot" {
+  const days = Math.abs(daysUntil(dateStr));
+  if (days >= 21) return "stale-hot";
+  if (days >= 7) return "stale-warm";
+  return "stale-neutral";
 }

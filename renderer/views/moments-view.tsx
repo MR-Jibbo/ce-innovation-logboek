@@ -14,7 +14,10 @@ export function MomentsView() {
     <div className="animate-fade-in">
       {sorted.length === 0 ? (
         <div className="card" style={{ color: "var(--text-tertiary)", textAlign: "center", padding: "36px" }}>
-          Nog geen ontwikkelmomenten gedocumenteerd. Voeg er een toe vanuit een project.
+          <p style={{ marginBottom: "10px" }}>Nog geen ontwikkelmomenten gedocumenteerd.</p>
+          <button className="btn-link" onClick={() => ctx.navigate("projects")}>
+            Naar je projecten →
+          </button>
         </div>
       ) : (
         sorted.map((e: Entry) => {

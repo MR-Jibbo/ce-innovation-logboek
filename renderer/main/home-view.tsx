@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, type CSSProperties } from "react";
 import { LogbookCtx, useLogbookCtx } from "../lib/logbook-context";
 import { useLogbook } from "../lib/use-logbook";
 import { SetupView } from "../views/setup-view";
@@ -18,6 +18,8 @@ import studioBeeftinkLogo from "../assets/studio-beeftink-logo.png";
 import easterEggFish from "../assets/easter-egg-fish.png";
 import type { LogbookContext } from "../lib/use-logbook";
 import type { ViewName } from "../lib/types";
+import { tipOfTheDay, PROJ_COLORS } from "../lib/constants";
+import { getCelebrationEnabled } from "../lib/celebration-setting";
 
 const NAV_ITEMS: Array<{ view: ViewName; label: string; icon: IconName }> = [
   { view: "home", label: "Dashboard", icon: "dashboard" },
@@ -90,6 +92,97 @@ function UpdateBanner() {
         v{update.latestVersion} is nu te downloaden, klik om naar de release-pagina te gaan.
       </p>
     </button>
+  );
+}
+
+// Tip van vandaag — a different, non-judgmental tip each day, computed
+// once per mount (a session normally spans a single calendar day; the tip
+// simply differs the next time the app is opened). Purely informational —
+// no streaks, no "goed bezig", no reference to progress or quality.
+function SidebarTip() {
+  const tip = useMemo(() => tipOfTheDay(), []);
+  return (
+    <div className="sb-tip">
+      <div className="sb-tip-title">
+        <AppIcon name="tip" size="xs" strokeWidth={2} /> Tip van vandaag
+      </div>
+      <p className="sb-tip-text">{tip}</p>
+    </div>
+  );
+}
+
+// ─── Bevestigingsanimatie ───────────────────────────────────────────────────
+// A brief, non-blocking celebration of the act of logging something — never
+// of its content, quality, or progress. No text, no streak counter, no
+// badges. Runs once per triggerCelebration() call and can be turned off
+// entirely in Instellingen (see celebration-setting.ts).
+const CELEBRATION_PIECE_COUNT = 18;
+
+interface CelebrationPiece {
+  id: number;
+  leftPct: number;
+  color: string;
+  width: number;
+  height: number;
+  driftPx: number;
+  fallVh: number;
+  rotateDeg: number;
+  durationS: number;
+  delayS: number;
+}
+
+function generateCelebrationPieces(): CelebrationPiece[] {
+  return Array.from({ length: CELEBRATION_PIECE_COUNT }, (_, id) => ({
+    id,
+    leftPct: Math.random() * 100,
+    color: PROJ_COLORS[id % PROJ_COLORS.length],
+    width: 5 + Math.random() * 4,
+    height: 8 + Math.random() * 6,
+    driftPx: -40 + Math.random() * 80,
+    fallVh: 30 + Math.random() * 25,
+    rotateDeg: -180 + Math.random() * 360,
+    durationS: 1.1 + Math.random() * 0.5,
+    delayS: Math.random() * 0.25,
+  }));
+}
+
+function CelebrationBurst({ trigger }: { trigger: number }) {
+  const [pieces, setPieces] = useState<CelebrationPiece[] | null>(null);
+  const clearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (trigger === 0) return; // initial mount — nothing logged yet
+    if (!getCelebrationEnabled()) return;
+    if (clearTimer.current) clearTimeout(clearTimer.current);
+    const next = generateCelebrationPieces();
+    setPieces(next);
+    const runtimeMs = Math.max(...next.map((p) => p.delayS + p.durationS)) * 1000 + 150;
+    clearTimer.current = setTimeout(() => setPieces(null), runtimeMs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trigger]);
+
+  if (!pieces) return null;
+
+  return (
+    <div className="celebration-layer">
+      {pieces.map((p) => (
+        <div
+          key={p.id}
+          className="celebration-piece"
+          style={{
+            left: `${p.leftPct}%`,
+            width: `${p.width}px`,
+            height: `${p.height}px`,
+            background: p.color,
+            animationDuration: `${p.durationS}s`,
+            animationDelay: `${p.delayS}s`,
+            "--cel-drift": `${p.driftPx}px`,
+            "--cel-fall": `${p.fallVh}vh`,
+            "--cel-rotate": `${p.rotateDeg}deg`,
+          } as CSSProperties}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -197,6 +290,7 @@ export function HomeView() {
     <LogbookCtx.Provider value={logbook}>
       <div className="app">
         {eggFish && <FishTrampoline fish={eggFish} />}
+        <CelebrationBurst trigger={logbook.celebrateTick} />
         {/* Sidebar */}
         <div className="sidebar">
           <div className="sb-brand" onClick={handleBrandClick}>
@@ -225,6 +319,7 @@ export function HomeView() {
 
           <div className="sb-bottom">
             <UpdateBanner />
+            <SidebarTip />
 
             <button
               className={`sb-profile-card${state.view === "profile" ? " active" : ""}`}

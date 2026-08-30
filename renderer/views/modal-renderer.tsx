@@ -302,7 +302,9 @@ function EntryFormModal({ skillId, periode, editId, onClose }: {
   const skill = ALL_SKILLS.find((s) => s.id === (existing?.skillId || skillId));
 
   const [title, setTitle] = useState(existing?.title || "");
-  const [date, setDate] = useState(existing?.date || "");
+  // Datum wordt automatisch op vandaag gezet bij een nieuw moment (nog wel
+  // aan te passen) — de student hoeft dit niet handmatig in te vullen.
+  const [date, setDate] = useState(existing?.date || (editId ? "" : new Date().toISOString().slice(0, 10)));
   const [desc, setDesc] = useState(existing?.description || "");
   const [refl, setRefl] = useState(existing?.reflection || "");
   const [acts, setActs] = useState<ActionItem[]>(existing?.actionItems ? existing.actionItems.map((a) => ({ ...a })) : []);
@@ -332,6 +334,7 @@ function EntryFormModal({ skillId, periode, editId, onClose }: {
         actionItems: acts,
         status,
       });
+      ctx.triggerCelebration();
     }
     onClose();
   };
@@ -373,7 +376,7 @@ function EntryFormModal({ skillId, periode, editId, onClose }: {
         <textarea
           className="input"
           rows={3}
-          placeholder="Beschrijf de situatie, wat je hebt gedaan en in welke context."
+          placeholder="Wat gebeurde er? Wat merkte je bij jezelf?"
           style={{ resize: "vertical" }}
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
@@ -638,6 +641,7 @@ function LukEntryFormModal({ lukId, criterionId, periode, editId, onClose }: {
       ctx.updateLukEntry(editId!, { title: title.trim(), text: text.trim(), files });
     } else {
       ctx.addLukEntry({ lukId, criterionId, periode, title: title.trim(), text: text.trim(), files });
+      ctx.triggerCelebration();
     }
     ctx.setModal({ type: "lukCritDetail", lukId, criterionId, periode });
   };
@@ -664,7 +668,7 @@ function LukEntryFormModal({ lukId, criterionId, periode, editId, onClose }: {
         <textarea
           className="input"
           rows={4}
-          placeholder="Beschrijf hoe dit bewijsstuk aantoont dat je bezig bent met het succescriterium."
+          placeholder="Wat wil je hiermee aantonen? Wat is de context?"
           style={{ resize: "vertical" }}
           value={text}
           onChange={(e) => setText(e.target.value)}

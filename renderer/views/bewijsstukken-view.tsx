@@ -131,7 +131,10 @@ export function BewijsstukkenView() {
 
       {sorted.length === 0 ? (
         <div className="card" style={{ color: "var(--text-tertiary)", textAlign: "center", padding: "36px" }}>
-          Nog geen bewijsstukken toegevoegd. Voeg er een toe vanuit een project.
+          <p style={{ marginBottom: "10px" }}>Nog geen bewijsstukken toegevoegd.</p>
+          <button className="btn-link" onClick={() => ctx.navigate("projects")}>
+            Naar je projecten →
+          </button>
         </div>
       ) : filtered.length === 0 ? (
         <div className="card" style={{ color: "var(--text-tertiary)", textAlign: "center", padding: "36px" }}>
