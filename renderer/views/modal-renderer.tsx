@@ -128,6 +128,7 @@ function SkillDetailModal({ skillId, onClose }: { skillId: string; onClose: () =
       <div className="subtle-box" style={{ marginBottom: "16px" }}>
         {skill.ind.map((ind, i) => (
           <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", padding: "5px 0", borderBottom: "1px solid var(--border-faint)" }}>
+            <span aria-hidden="true" style={{ color: "var(--pink)", fontWeight: "var(--fw-bold)", lineHeight: "1.5", flexShrink: 0 }}>•</span>
             <span style={{ fontSize: "var(--fs-sm)", color: "var(--text-primary)", lineHeight: "1.5" }}>{ind}</span>
           </div>
         ))}
@@ -736,6 +737,7 @@ function SkillIndicatorsModal({ skillId, onClose }: { skillId: string; onClose: 
       <div className="subtle-box">
         {skill.ind.map((ind, i) => (
           <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", padding: "5px 0", borderBottom: "1px solid var(--border-faint)" }}>
+            <span aria-hidden="true" style={{ color: "var(--pink)", fontWeight: "var(--fw-bold)", lineHeight: "1.5", flexShrink: 0 }}>•</span>
             <span style={{ fontSize: "var(--fs-sm)", color: "var(--text-primary)", lineHeight: "1.5" }}>{ind}</span>
           </div>
         ))}
