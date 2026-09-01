@@ -9,6 +9,7 @@ import { ProjectsView } from "../views/projects-view";
 import { MomentsView } from "../views/moments-view";
 import { BewijsstukkenView } from "../views/bewijsstukken-view";
 import { SkillsOverviewView } from "../views/skills-overview-view";
+import { HulpmiddelenView } from "../views/hulpmiddelen-view";
 import { PlanningView } from "../views/planning-view";
 import { ReflectieView } from "../views/reflectie-view";
 import { ProfileView } from "../views/profile-view";
@@ -29,6 +30,7 @@ const NAV_ITEMS: Array<{ view: ViewName; label: string; icon: IconName }> = [
   { view: "moments", label: "Ontwikkelmomenten", icon: "moments" },
   { view: "reflectie", label: "Reflectie", icon: "reflect" },
   { view: "planning", label: "Planning", icon: "planning" },
+  { view: "hulpmiddelen", label: "Hulpmiddelen", icon: "tools" },
 ];
 
 // Startup splash: a calm fade-in of the logo + tagline, a shared "inzoom"
@@ -280,6 +282,7 @@ export function HomeView() {
   else if (state.view === "moments") topbarTitle = "Ontwikkelmomenten";
   else if (state.view === "bewijsstukken") topbarTitle = "Bewijsstukken";
   else if (state.view === "skills") topbarTitle = "Skills";
+  else if (state.view === "hulpmiddelen") topbarTitle = "Hulpmiddelen";
   else if (state.view === "planning") topbarTitle = "Planning";
   else if (state.view === "reflectie") topbarTitle = "Reflectie";
   else if (state.view === "profile") topbarTitle = "Instellingen";
@@ -519,6 +522,7 @@ function MainContent() {
   if (state.view === "moments") return <MomentsView />;
   if (state.view === "bewijsstukken") return <BewijsstukkenView />;
   if (state.view === "skills") return <SkillsOverviewView />;
+  if (state.view === "hulpmiddelen") return <HulpmiddelenView />;
   if (state.view === "planning") return <PlanningView />;
   if (state.view === "reflectie") return <ReflectieView />;
   if (state.view === "profile") return <ProfileView />;

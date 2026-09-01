@@ -1,6 +1,6 @@
 {
   "name": "ce-innovation-logboek",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "productName": "CE-Innovation Logboek",
   "description": "Log skills and learning outcomes",
   "author": "Jibbe Beeftink",
@@ -56,6 +56,12 @@
       "build/**/*",
       "main-window.html",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/hulpmiddelen",
+        "to": "hulpmiddelen"
+      }
     ],
     "mac": {
       "category": "public.app-category.education",

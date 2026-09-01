@@ -388,6 +388,22 @@ export function useLogbook() {
     return await window.glazeAPI.glaze.ipc.invoke("logbook:exportPdf", backendData, projectKey);
   }, [state]);
 
+  // ─── Hulpmiddelen (statische PDF's) ─────────────────────────────────────
+  const openHulpmiddel = useCallback(async (bestandsnaam: string) => {
+    return await window.glazeAPI.glaze.ipc.invoke<{ success: boolean; error?: string }>(
+      "hulpmiddelen:open",
+      bestandsnaam,
+    );
+  }, []);
+
+  const downloadHulpmiddel = useCallback(async (bestandsnaam: string, suggestedName: string) => {
+    return await window.glazeAPI.glaze.ipc.invoke<{ success: boolean; canceled: boolean; filePath?: string; error?: string }>(
+      "hulpmiddelen:download",
+      bestandsnaam,
+      suggestedName,
+    );
+  }, []);
+
   // ─── Word export ──────────────────────────────────────────────────────────
   const exportWord = useCallback(async (projectKey: string) => {
     const backendData: BackendData = {
@@ -436,6 +452,8 @@ export function useLogbook() {
     resetProject,
     exportPdf,
     exportWord,
+    openHulpmiddel,
+    downloadHulpmiddel,
     dataFolder,
     setupStep,
     pickDataFolder,

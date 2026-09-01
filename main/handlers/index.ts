@@ -10,6 +10,7 @@ import { appHandlers } from "./app.js";
 import { logbookStore, type LogbookData } from "../services/logbook-store.js";
 import { exportLogbookPdf, exportLogbookWord, SKILL_DEFS_BACKEND, LUK_DEFS_BACKEND } from "../services/pdf-export.js";
 import { checkForUpdate } from "../services/update-check.js";
+import { openHulpmiddel, downloadHulpmiddel } from "../services/hulpmiddelen-store.js";
 
 export function registerHandlers(): void {
   ipcMain.handle("app:getInfo", async (_event) => {
@@ -68,6 +69,18 @@ export function registerHandlers(): void {
 
   ipcMain.handle("logbook:exportWord", async (_event, data: LogbookData, projectKey: string) => {
     return await exportLogbookWord(data, SKILL_DEFS_BACKEND, LUK_DEFS_BACKEND, projectKey);
+  });
+
+  // ─── Hulpmiddelen (statische PDF's, meegebouwd via extraResources) ──────
+  // "Bekijken": opent in het systeem-standaardprogramma (shell.openPath) —
+  // zie hulpmiddelen-store.ts voor de afweging t.o.v. een in-app viewer.
+  ipcMain.handle("hulpmiddelen:open", async (_event, bestandsnaam: string) => {
+    return await openHulpmiddel(bestandsnaam);
+  });
+
+  // "Downloaden": save-dialog + kopie naar de gekozen locatie.
+  ipcMain.handle("hulpmiddelen:download", async (_event, bestandsnaam: string, suggestedName: string) => {
+    return await downloadHulpmiddel(bestandsnaam, suggestedName);
   });
 
   // ─── Native dialog passthrough (used by preload's dialog.* bridge) ───────

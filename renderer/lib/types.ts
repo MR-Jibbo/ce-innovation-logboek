@@ -9,6 +9,7 @@ export type ViewName =
   | "moments"
   | "bewijsstukken"
   | "skills"
+  | "hulpmiddelen"
   | "planning"
   | "reflectie"
   | "profile";
