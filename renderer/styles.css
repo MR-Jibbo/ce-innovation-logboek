@@ -8,53 +8,6 @@
    LEVI — Design Token System (Ilo-designsysteem)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Zelf-gehost (geen netwerk nodig — de app draait offline): Instrument
-   Serif voor koppen/wordmark, Instrument Sans voor interfacetekst,
-   JetBrains Mono voor data (datums, percentages, tellingen). Alleen de
-   Latin-subset (U+0000-00FF e.a.) is nodig voor Nederlandse tekst. */
-@font-face {
-  font-family: "Instrument Serif";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./assets/fonts/instrument-serif-400.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Instrument Sans";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./assets/fonts/instrument-sans-400.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Instrument Sans";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("./assets/fonts/instrument-sans-500.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Instrument Sans";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("./assets/fonts/instrument-sans-600.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Instrument Sans";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("./assets/fonts/instrument-sans-700.woff2") format("woff2");
-}
-@font-face {
-  font-family: "JetBrains Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./assets/fonts/jetbrains-mono-400.woff2") format("woff2");
-}
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -70,6 +23,12 @@
   /* ── Accent: zonnehoning — spaarzaam, max. één keer per scherm ── */
   --accent: #EBB255;
   --accent-hover: #D2963A;
+
+  /* ── Lava-achtergrond (zie .lava-bg hieronder) — in licht thema heel
+     ingehouden (multiply, lage opacity) zodat het decoratie blijft en geen
+     concurrentie met de tekst wordt. ── */
+  --lava-opacity: 0.16;
+  --lava-blend: multiply;
 
   /* ── Text ── */
   --text-primary: #23261F;
@@ -121,13 +80,13 @@
      the whole app's text scales from one slider. Elements that should stay
      a fixed size regardless (e.g. the splash screen) use literal px values
      instead of these tokens.
-     --font = Instrument Sans (interfacetekst), --font-display = Instrument
-     Serif (koppen, wordmark, grote getallen), --font-mono = JetBrains Mono
-     (datums, percentages, tellingen — "getallen altijd in mono"). */
-  --font: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --tracking-display: -0.015em;
+     --font is de systeemfont overal in de app; --font-display/--font-mono
+     wijzen ook naar de systeemfont zodat koppen en data-tekst er hetzelfde
+     uitzien als de rest (geen apart lettertype meer voor die elementen). */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --tracking-display: normal;
   --fs-scale: 1;
   --fs-xs: calc(11px * var(--fs-scale));
   --fs-sm: calc(12px * var(--fs-scale));
@@ -222,6 +181,11 @@
     --pink-soft: rgba(127, 177, 142, 0.08);
     --accent: #F2C46B;
     --accent-hover: #F6D28E;
+
+    /* Donker thema: de vlekken mogen echt gloeien (zoals een lava lamp in
+       een donkere kamer) — screen-blend + hogere opacity i.p.v. multiply. */
+    --lava-opacity: 0.4;
+    --lava-blend: screen;
 
     --bg: #161814;
     --surface: #1E211C;
@@ -352,7 +316,7 @@ textarea,
   border-bottom: 1px solid var(--sidebar-border);
   flex-shrink: 0;
 }
-/* Wordmark-lockup: beeldmerk + "LEVI" in Instrument Serif, afstand tussen
+/* Wordmark-lockup: beeldmerk + "LEVI", afstand tussen
    merk en tekst ≈ een derde van de merkhoogte. */
 .sb-wordmark { display: flex; align-items: center; gap: 8px; }
 .sb-wordmark-icon { width: 22px; height: 22px; display: block; flex-shrink: 0; }
@@ -634,6 +598,15 @@ textarea,
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  /* backdrop-filter maakt van .topbar impliciet een eigen stacking context.
+     Zonder een eigen z-index (en position) wint de daaropvolgende .page in
+     de DOM-volgorde de hit-test/paintorde zodra iets uit de topbar (zoals
+     het "···"-dropdownmenu) buiten de topbar-hoogte uitsteekt — het menu
+     oogt dan bovenop de pagina, maar klikken landen onzichtbaar op de
+     pagina-inhoud eronder. position + z-index tillen de hele topbar
+     (met het dropdownmenu erin) boven .page uit. */
+  position: relative;
+  z-index: 10;
   /* Lets the user drag the window by clicking anywhere on the topbar,
      like a native app's title bar. Interactive children (buttons, the
      export dropdown) opt back out below so they stay clickable. */
@@ -694,6 +667,94 @@ textarea,
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .page { flex: 1; padding: var(--page-pad); overflow-y: auto; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Lava-achtergrond
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Trage, wazige kleurvlekken achter de hoofdinhoud (niet achter sidebar of
+   topbar) — puur decoratief, dus lichtgewicht (alleen transform-animaties,
+   geen JS) en met opzet héél traag: op elk moment dat je ernaar kijkt is de
+   beweging nauwelijks te zien, alleen als je wegkijkt en terugkomt valt het
+   verschil op. Bewust NIET getoond op schrijf-schermen (bijv. Reflectie,
+   zie ShowsLava in home-view.tsx) — daar zou zelfs trage beweging in je
+   ooghoek kunnen afleiden terwijl je een langere tekst typt.
+
+   position: fixed (i.p.v. absolute) zodat het blijft staan terwijl de
+   pagina-inhoud scrollt; z-index: -1 legt het achter de (niet-gepositioneerde)
+   kaarten/content, vóór de effen paginakleur van <body>. pointer-events: none
+   zodat het nooit kliks onderschept — dezelfde categorie fout als de topbar-
+   dropdown eerder. */
+.lava-bg {
+  position: fixed;
+  left: var(--sw);
+  top: calc(var(--topbar-h) + var(--titlebar-inset));
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+  z-index: -1;
+}
+
+.lava-blob {
+  position: absolute;
+  border-radius: 50%;
+  opacity: var(--lava-opacity);
+  mix-blend-mode: var(--lava-blend);
+  filter: blur(70px);
+  will-change: transform;
+}
+
+.lava-blob-1 {
+  width: 30vw;
+  height: 30vw;
+  min-width: 380px;
+  min-height: 380px;
+  top: -8%;
+  left: 8%;
+  background: radial-gradient(circle at 38% 35%, var(--pink), transparent 72%);
+  animation: lava-drift-1 52s ease-in-out infinite alternate;
+}
+.lava-blob-2 {
+  width: 26vw;
+  height: 26vw;
+  min-width: 320px;
+  min-height: 320px;
+  bottom: -12%;
+  right: 6%;
+  background: radial-gradient(circle at 60% 60%, var(--accent), transparent 72%);
+  animation: lava-drift-2 63s ease-in-out infinite alternate;
+}
+.lava-blob-3 {
+  width: 22vw;
+  height: 22vw;
+  min-width: 260px;
+  min-height: 260px;
+  top: 38%;
+  right: 22%;
+  background: radial-gradient(circle at 45% 45%, var(--pink), transparent 72%);
+  animation: lava-drift-3 45s ease-in-out infinite alternate;
+}
+
+@keyframes lava-drift-1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(6vw, 5vh) scale(1.18); }
+}
+@keyframes lava-drift-2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-5vw, -6vh) scale(0.88); }
+}
+@keyframes lava-drift-3 {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-4vw, 6vh) scale(1.12); }
+}
+
+/* Staat het OS/de gebruiker "verminderde beweging" aan, dan blijven de
+   vlekken gewoon zichtbaar (het is enkel decoratie) maar zonder animatie. */
+@media (prefers-reduced-motion: reduce) {
+  .lava-blob { animation: none; }
+}
 
 .page-title {
   font-family: var(--font-display);
@@ -1040,6 +1101,9 @@ textarea.input { resize: vertical; line-height: 1.5; }
   border-color: var(--pink);
   box-shadow: var(--shadow-pink);
 }
+.entry-row:not(:last-child) {
+  margin-bottom: 10px;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    AI tip
@@ -1091,7 +1155,13 @@ textarea.input { resize: vertical; line-height: 1.5; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0a0a0e 0%, #1a0a14 50%, #0e0a14 100%);
+  /* Altijd een donkere hero-achtergrond (ongeacht licht/donker-thema van de
+     app zelf), maar getint met het sage-merk in plaats van het oude roze —
+     plus dezelfde fijne korrel als de rest van de app. */
+  background:
+    var(--grain-image),
+    radial-gradient(ellipse 900px 520px at 28% 18%, rgba(91, 138, 107, 0.14), transparent 60%),
+    linear-gradient(135deg, #0c0e0a 0%, #161814 55%, #0e100c 100%);
   padding: 20px;
 }
 .setup-card {

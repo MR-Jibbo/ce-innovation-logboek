@@ -110,7 +110,10 @@ export function HulpmiddelLightbox({ hulpmiddelId, onClose }: { hulpmiddelId: st
   const handleOpenSystemViewer = async () => {
     setFallbackBusy(true);
     try {
-      await ctx.openHulpmiddel(h.bestandsnaam);
+      const res = await ctx.openHulpmiddel(h.bestandsnaam);
+      if (!res.success) {
+        setErrorMsg(res.error || "Kon het bestand niet openen in de systeemviewer.");
+      }
     } finally {
       setFallbackBusy(false);
     }

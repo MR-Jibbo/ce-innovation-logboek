@@ -894,14 +894,14 @@ function NewProjectModal({ onClose }: { onClose: () => void }) {
               <div
                 key={sk.id}
                 className="onboard-card"
-                style={sel ? { borderColor: sk.color, background: `${sk.color}08` } : {}}
+                style={sel ? { borderColor: "var(--pink)", background: "var(--pink-subtle)" } : {}}
                 onClick={() => toggleSkill(sk.id)}
               >
                 <div className="flex-between">
                   <div className="dot-row" style={{ gap: "6px" }}>
                     <span style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-semibold)" }}>{sk.name}</span>
                   </div>
-                  {sel && <span style={{ color: sk.color }}><AppIcon name="check" size="sm" strokeWidth={2.5} /></span>}
+                  {sel && <span style={{ color: "var(--pink)" }}><AppIcon name="check" size="sm" strokeWidth={2.5} /></span>}
                 </div>
               </div>
             );

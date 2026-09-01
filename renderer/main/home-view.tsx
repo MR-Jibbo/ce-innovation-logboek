@@ -291,6 +291,11 @@ export function HomeView() {
   else if (state.view === "profile") topbarTitle = "Instellingen";
 
   const showProjectActions = state.view === "project" && !!logbook.curProject();
+  // De lava-achtergrond is puur decoratief en blijft daarom weg op schermen
+  // waar je langere tijd aan één stuk zit te typen — daar zou zelfs trage
+  // beweging in je ooghoek kunnen afleiden. Overal elders (overzichten,
+  // lijsten, korte formuliertjes) is het veilig.
+  const showLavaBg = state.view !== "reflectie";
 
   return (
     <LogbookCtx.Provider value={logbook}>
@@ -304,7 +309,6 @@ export function HomeView() {
               <img src={markDarkDuo} alt="" className="sb-wordmark-icon" />
               <span className="sb-wordmark-text">LEVI</span>
             </div>
-            <div className="sb-brand-sub">Logboek</div>
           </div>
 
           <div className="sb-projects">
@@ -373,6 +377,17 @@ export function HomeView() {
               )}
             </div>
           </div>
+
+          {/* Lava-achtergrond: trage, wazige kleurvlekken achter de
+              pagina-inhoud (zie .lava-bg in styles.css). aria-hidden omdat
+              het puur decoratief is; niet getoond op schrijf-schermen. */}
+          {showLavaBg && (
+            <div className="lava-bg" aria-hidden="true">
+              <span className="lava-blob lava-blob-1" />
+              <span className="lava-blob lava-blob-2" />
+              <span className="lava-blob lava-blob-3" />
+            </div>
+          )}
 
           {/* Page content */}
           <div className="page">

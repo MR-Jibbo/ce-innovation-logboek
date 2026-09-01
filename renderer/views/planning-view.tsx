@@ -73,7 +73,7 @@ export function PlanningView() {
       <h2 className="section-title">Aankomend ({upcoming.length})</h2>
       {upcoming.length === 0 ? (
         <div className="card" style={{ color: "var(--text-tertiary)", textAlign: "center", padding: "24px", marginBottom: "24px" }}>
-          Geen aankomende deadlines. Je bent helemaal bij! 🎉
+          Geen aankomende deadlines. Je bent helemaal bij!
         </div>
       ) : (
         <div style={{ marginBottom: "24px" }}>

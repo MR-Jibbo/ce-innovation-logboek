@@ -75,7 +75,7 @@ export function DashboardView() {
               <button
                 key={p.id}
                 className="entry-row"
-                style={{ width: "100%", border: "none", boxShadow: "none", background: "none" }}
+                style={{ width: "100%" }}
                 onClick={() => ctx.navigate("project", p.id)}
               >
                 <div className="flex-between">
@@ -93,7 +93,7 @@ export function DashboardView() {
                   </div>
                 </div>
                 {!completed && (
-                  <p className={stalenessClass(lastActive)} style={{ fontSize: "var(--fs-xs)", margin: "4px 0 0 18px" }}>
+                  <p className={stalenessClass(lastActive)} style={{ fontSize: "var(--fs-xs)", margin: "4px 0 0 0" }}>
                     Laatst bijgewerkt: {daysUntilLabel(lastActive)}
                   </p>
                 )}
