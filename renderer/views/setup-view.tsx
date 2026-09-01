@@ -58,7 +58,7 @@ function LocationStep() {
 
         <button
           className="btn-ghost"
-          style={{ width: "100%", justifyContent: "flex-start", marginBottom: "12px", padding: "12px 14px" }}
+          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "flex-start", marginBottom: "12px", padding: "12px 14px" }}
           onClick={handlePick}
           disabled={picking}
         >

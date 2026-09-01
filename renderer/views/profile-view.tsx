@@ -90,7 +90,7 @@ export function ProfileView() {
 
         <button
           className="btn-ghost"
-          style={{ justifyContent: "flex-start", padding: "10px 14px" }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", padding: "10px 14px" }}
           onClick={handleChangeFolder}
           disabled={changingFolder}
         >

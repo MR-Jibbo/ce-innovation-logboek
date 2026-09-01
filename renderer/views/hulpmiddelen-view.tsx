@@ -6,14 +6,14 @@ export function HulpmiddelenView() {
 
   return (
     <div className="animate-fade-in">
-      <div className="grid-3">
+      <div className="grid-fixed-3">
         {HULPMIDDELEN.map((h) => (
           <div
             key={h.id}
-            className="card-sm clickable-card"
+            className="hulpmiddel-tile clickable-card"
             onClick={() => ctx.setModal({ type: "hulpmiddelDetail", hulpmiddelId: h.id })}
           >
-            <span style={{ fontWeight: "var(--fw-semibold)", fontSize: "var(--fs-sm)" }}>{h.titel}</span>
+            <span style={{ fontWeight: "var(--fw-semibold)", fontSize: "var(--fs-md)" }}>{h.titel}</span>
           </div>
         ))}
       </div>
