@@ -155,6 +155,7 @@ export type ModalState =
   | { type: "lukDetail"; entryId: string }
   | { type: "lukEntryForm"; lukId: string; criterionId: string; periode: string; editId?: string }
   | { type: "newProject" }
+  | { type: "hulpmiddelDetail"; hulpmiddelId: string }
   | { type: "completeProject"; key: string }
   | { type: "confirm"; msg: string; onOk: () => void }
   | null;

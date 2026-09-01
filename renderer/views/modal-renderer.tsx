@@ -2,6 +2,7 @@ import { useState, type ChangeEvent, type ReactNode } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
 import { projectName } from "../lib/use-logbook";
 import { ALL_SKILLS, LUK_DEFS, STATUS, uid } from "../lib/constants";
+import { HULPMIDDELEN } from "../data/hulpmiddelen";
 import type { LukFile, StatusKey, ActionItem } from "../lib/types";
 import { AppIcon } from "../components/AppIcon";
 
@@ -55,6 +56,10 @@ export function ModalRenderer() {
     case "newProject":
       size = "md";
       box = <NewProjectModal onClose={close} />;
+      break;
+    case "hulpmiddelDetail":
+      size = "sm";
+      box = <HulpmiddelDetailModal hulpmiddelId={modal.hulpmiddelId} onClose={close} />;
       break;
     default:
       return null;
@@ -908,6 +913,54 @@ function NewProjectModal({ onClose }: { onClose: () => void }) {
       <button className="btn btn-primary" style={{ width: "100%" }} onClick={handleCreate}>
         Project aanmaken
       </button>
+    </>
+  );
+}
+
+// ─── Hulpmiddel Detail Modal ──────────────────────────────────────────────────
+function HulpmiddelDetailModal({ hulpmiddelId, onClose }: { hulpmiddelId: string; onClose: () => void }) {
+  const ctx = useLogbookCtx();
+  const h = HULPMIDDELEN.find((x) => x.id === hulpmiddelId);
+  const [status, setStatus] = useState<string | null>(null);
+  if (!h) return null;
+
+  const flashStatus = (msg: string) => {
+    setStatus(msg);
+    setTimeout(() => setStatus(null), 3000);
+  };
+
+  const handleOpen = async () => {
+    const res = await ctx.openHulpmiddel(h.bestandsnaam);
+    if (!res.success) flashStatus(res.error || "Kon het bestand niet openen.");
+  };
+
+  const handleDownload = async () => {
+    const res = await ctx.downloadHulpmiddel(h.bestandsnaam, h.bestandsnaam);
+    if (res.success) flashStatus("Opgeslagen.");
+    else if (!res.canceled) flashStatus(res.error || "Kon het bestand niet downloaden.");
+  };
+
+  return (
+    <>
+      <ModalHeader title={h.titel} onClose={onClose} />
+      <p style={{ fontSize: "var(--fs-sm)", color: "var(--text-secondary)", marginBottom: "18px", lineHeight: "1.6" }}>
+        {h.beschrijving}
+      </p>
+      <div className="flex-center" style={{ gap: "8px" }}>
+        <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleOpen}>
+          <AppIcon name="eye" size="xs" /> Bekijken
+        </button>
+        <button className="btn-ghost" style={{ flex: 1 }} onClick={handleDownload}>
+          <span className="flex-center" style={{ gap: "5px", justifyContent: "center" }}>
+            <AppIcon name="download" size="xs" /> Downloaden
+          </span>
+        </button>
+      </div>
+      {status && (
+        <p style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", marginTop: "10px", textAlign: "center" }}>
+          {status}
+        </p>
+      )}
     </>
   );
 }
