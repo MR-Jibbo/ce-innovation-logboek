@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
 import { getGreeting, projectName, daysUntilLabel, relativeTimeLabel, lastActivityDate, stalenessClass } from "../lib/use-logbook";
-import { PROJ_COLORS, LUK_DEFS } from "../lib/constants";
+import { LUK_DEFS } from "../lib/constants";
 import { AppIcon } from "../components/AppIcon";
 import type { Entry, LukEntry, Deadline } from "../lib/types";
 
@@ -57,15 +57,15 @@ export function DashboardView() {
       {/* Mijn projecten — één lijst met statuslabel per project */}
       <h2 className="section-title">Mijn projecten</h2>
       {state.projects.length === 0 ? (
-        <div className="card" style={{ color: "var(--text-tertiary)", textAlign: "center", padding: "24px", marginBottom: "24px" }}>
+        <div className="card" style={{ color: "var(--text-tertiary)", textAlign: "center", padding: "24px", marginBottom: "var(--section-gap)" }}>
           <p style={{ marginBottom: "10px" }}>Nog geen projecten aangemaakt.</p>
           <button className="btn-link" onClick={() => ctx.setModal({ type: "newProject" })}>
             Maak je eerste project aan →
           </button>
         </div>
       ) : (
-        <div className="card" style={{ padding: "6px", marginBottom: "24px" }}>
-          {state.projects.map((p, i) => {
+        <div className="card" style={{ padding: "6px", marginBottom: "var(--section-gap)" }}>
+          {state.projects.map((p) => {
             const itemCount =
               state.entries.filter((e: Entry) => e.periode === p.id).length +
               state.lukEntries.filter((e: LukEntry) => e.periode === p.id).length;
@@ -80,7 +80,6 @@ export function DashboardView() {
               >
                 <div className="flex-between">
                   <div className="dot-row" style={{ minWidth: 0 }}>
-                    <span className="dot" style={{ width: "8px", height: "8px", background: PROJ_COLORS[i % PROJ_COLORS.length], flexShrink: 0 }} />
                     <span style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-medium)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {p.naam}
                     </span>

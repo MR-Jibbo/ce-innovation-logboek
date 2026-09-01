@@ -5,7 +5,7 @@
 export const appHandlers = {
   getInfo: async () => {
     return {
-      name: "CE-Innovation Logboek",
+      name: "LEVI",
       version: "1.0.0",
       environment: process.env.NODE_ENV || "production",
     };

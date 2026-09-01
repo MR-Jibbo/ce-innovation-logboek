@@ -17,6 +17,8 @@ import { ModalRenderer } from "../views/modal-renderer";
 import { AppIcon, type IconName } from "../components/AppIcon";
 import studioBeeftinkLogo from "../assets/studio-beeftink-logo.png";
 import easterEggFish from "../assets/easter-egg-fish.png";
+import markDuo from "../assets/brand/mark-duo.svg";
+import markDarkDuo from "../assets/brand/mark-dark-duo.svg";
 import type { LogbookContext } from "../lib/use-logbook";
 import type { ViewName } from "../lib/types";
 import { tipOfTheDay, PROJ_COLORS } from "../lib/constants";
@@ -48,7 +50,7 @@ type SplashStage = "brand" | "brand-exit" | "name" | "name-exit";
 const SPLASH_FADE_IN_MS = 500; // duration of the brand's own fade-in
 const SPLASH_HOLD_BRAND_MS = 1200; // extra pause once fully visible, before zooming out — logo + tagline readable
 const SPLASH_TRANSITION_MS = 350; // shared zoom-out/zoom-in duration
-const SPLASH_HOLD_NAME_MS = 2000; // "Innovation Logboek" stays on screen — readable
+const SPLASH_HOLD_NAME_MS = 2000; // "LEVI" wordmark stays on screen — readable
 
 interface UpdateCheckResult {
   hasUpdate: boolean;
@@ -229,7 +231,8 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
       {(stage === "name" || stage === "name-exit") && (
         <div className={`splash-stage splash-name${stage === "name-exit" ? " splash-exit" : ""}`}>
           <p className="splash-appname">
-            <span className="accent">Innovation</span> Logboek
+            <img src={markDuo} alt="" className="splash-appname-icon" />
+            LEVI
           </p>
         </div>
       )}
@@ -297,7 +300,10 @@ export function HomeView() {
         {/* Sidebar */}
         <div className="sidebar">
           <div className="sb-brand" onClick={handleBrandClick}>
-            <div className="sb-brand-title">Innovation</div>
+            <div className="sb-wordmark">
+              <img src={markDarkDuo} alt="" className="sb-wordmark-icon" />
+              <span className="sb-wordmark-text">LEVI</span>
+            </div>
             <div className="sb-brand-sub">Logboek</div>
           </div>
 

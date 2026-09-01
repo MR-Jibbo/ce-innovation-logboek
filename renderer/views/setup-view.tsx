@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLogbookCtx } from "../lib/logbook-context";
 import { AppIcon } from "../components/AppIcon";
+import markDuo from "../assets/brand/mark-duo.svg";
 
 export function SetupView() {
   const ctx = useLogbookCtx();
@@ -42,7 +43,10 @@ function LocationStep() {
     <div className="setup-page">
       <div className="setup-card">
         <div className="setup-logo">
-          <h1><span className="accent">Innovation</span> Logboek</h1>
+          <h1>
+            <img src={markDuo} alt="" className="setup-logo-icon" />
+            <span className="setup-logo-text">LEVI</span>
+          </h1>
         </div>
 
         <p className="field-label" style={{ marginBottom: "6px" }}>Waar wil je je logboekgegevens opslaan?</p>
@@ -104,7 +108,10 @@ function ProfileStep() {
       <div className="setup-card">
         {/* Logo */}
         <div className="setup-logo">
-          <h1><span className="accent">Innovation</span> Logboek</h1>
+          <h1>
+            <img src={markDuo} alt="" className="setup-logo-icon" />
+            <span className="setup-logo-text">LEVI</span>
+          </h1>
         </div>
 
         {ctx.dataFolder && (

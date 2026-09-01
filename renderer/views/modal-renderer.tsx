@@ -3,6 +3,7 @@ import { useLogbookCtx } from "../lib/logbook-context";
 import { projectName } from "../lib/use-logbook";
 import { ALL_SKILLS, LUK_DEFS, STATUS, uid } from "../lib/constants";
 import { HULPMIDDELEN } from "../data/hulpmiddelen";
+import { HulpmiddelLightbox } from "./hulpmiddel-lightbox";
 import type { LukFile, StatusKey, ActionItem } from "../lib/types";
 import { AppIcon } from "../components/AppIcon";
 
@@ -61,6 +62,10 @@ export function ModalRenderer() {
       size = "sm";
       box = <HulpmiddelDetailModal hulpmiddelId={modal.hulpmiddelId} onClose={close} />;
       break;
+    case "hulpmiddelLightbox":
+      size = "xl";
+      box = <HulpmiddelLightbox hulpmiddelId={modal.hulpmiddelId} onClose={close} />;
+      break;
     default:
       return null;
   }
@@ -112,7 +117,6 @@ function SkillDetailModal({ skillId, onClose }: { skillId: string; onClose: () =
     <>
       <div className="flex-between" style={{ marginBottom: "18px" }}>
         <div className="dot-row" style={{ gap: "10px" }}>
-          <span className="dot" style={{ width: "14px", height: "14px", background: skill.color }} />
           <h2 style={{ fontSize: "var(--fs-lg)", fontWeight: "var(--fw-bold)", margin: "0" }}>{skill.name}</h2>
         </div>
         <button className="modal-close" onClick={onClose}>
@@ -124,7 +128,6 @@ function SkillDetailModal({ skillId, onClose }: { skillId: string; onClose: () =
       <div className="subtle-box" style={{ marginBottom: "16px" }}>
         {skill.ind.map((ind, i) => (
           <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", padding: "5px 0", borderBottom: "1px solid var(--border-faint)" }}>
-            <span style={{ color: skill.color, flexShrink: 0, fontSize: "var(--fs-xs)", marginTop: "3px" }}>●</span>
             <span style={{ fontSize: "var(--fs-sm)", color: "var(--text-primary)", lineHeight: "1.5" }}>{ind}</span>
           </div>
         ))}
@@ -143,7 +146,7 @@ function SkillDetailModal({ skillId, onClose }: { skillId: string; onClose: () =
           <p className="slabel" style={{ marginTop: "14px" }}>Tips</p>
           {data.tips.map((tip, i) => (
             <div key={i} className="ai-tip">
-              <span style={{ fontWeight: "var(--fw-heavy)", color: "#7c3aed", flexShrink: 0 }}>{i + 1}.</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontWeight: "var(--fw-semibold)", color: "var(--pink)", flexShrink: 0 }}>{i + 1}.</span>
               <span style={{ fontSize: "var(--fs-sm)", color: "var(--text-primary)", lineHeight: "1.5" }}>{tip}</span>
             </div>
           ))}
@@ -349,7 +352,6 @@ function EntryFormModal({ skillId, periode, editId, onClose }: {
       <ModalHeader title={existing ? `Moment bewerken, ${skill?.name || ""}` : ` Nieuw ontwikkelmoment, ${skill?.name || ""}`} onClose={onClose} />
       {skill && (
         <div className="subtle-box" style={{ display: "inline-flex", alignItems: "center", gap: "7px", marginBottom: "14px", padding: "5px 11px" }}>
-          <span className="dot" style={{ width: "8px", height: "8px", background: skill.color }} />
           <span style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-semibold)", color: "var(--text-primary)" }}>{skill.name} · {fixedPName}</span>
         </div>
       )}
@@ -723,7 +725,6 @@ function SkillIndicatorsModal({ skillId, onClose }: { skillId: string; onClose: 
     <>
       <div className="flex-between" style={{ marginBottom: "18px" }}>
         <div className="dot-row" style={{ gap: "10px" }}>
-          <span className="dot" style={{ width: "14px", height: "14px", background: skill.color }} />
           <h2 style={{ fontSize: "var(--fs-lg)", fontWeight: "var(--fw-bold)", margin: "0" }}>{skill.name}</h2>
         </div>
         <button className="modal-close" onClick={onClose}>
@@ -735,7 +736,6 @@ function SkillIndicatorsModal({ skillId, onClose }: { skillId: string; onClose: 
       <div className="subtle-box">
         {skill.ind.map((ind, i) => (
           <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", padding: "5px 0", borderBottom: "1px solid var(--border-faint)" }}>
-            <span style={{ color: skill.color, flexShrink: 0, fontSize: "var(--fs-xs)", marginTop: "3px" }}>●</span>
             <span style={{ fontSize: "var(--fs-sm)", color: "var(--text-primary)", lineHeight: "1.5" }}>{ind}</span>
           </div>
         ))}
@@ -899,7 +899,6 @@ function NewProjectModal({ onClose }: { onClose: () => void }) {
               >
                 <div className="flex-between">
                   <div className="dot-row" style={{ gap: "6px" }}>
-                    <span className="dot" style={{ width: "8px", height: "8px", background: sk.color }} />
                     <span style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-semibold)" }}>{sk.name}</span>
                   </div>
                   {sel && <span style={{ color: sk.color }}><AppIcon name="check" size="sm" strokeWidth={2.5} /></span>}
@@ -929,9 +928,8 @@ function HulpmiddelDetailModal({ hulpmiddelId, onClose }: { hulpmiddelId: string
     setTimeout(() => setStatus(null), 3000);
   };
 
-  const handleOpen = async () => {
-    const res = await ctx.openHulpmiddel(h.bestandsnaam);
-    if (!res.success) flashStatus(res.error || "Kon het bestand niet openen.");
+  const handleOpen = () => {
+    ctx.setModal({ type: "hulpmiddelLightbox", hulpmiddelId: h.id });
   };
 
   const handleDownload = async () => {

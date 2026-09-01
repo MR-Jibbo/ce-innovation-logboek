@@ -6,7 +6,7 @@ import "../styles.css";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { getThemePreference, setThemePreference } from "../lib/theme";
 
-document.title = "CE-Innovation Logboek";
+document.title = "LEVI";
 
 // The inline script in main-window.html already applied the right class
 // before first paint; this call is what attaches the live listener for

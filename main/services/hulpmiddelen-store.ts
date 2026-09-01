@@ -40,12 +40,12 @@ function resolveSafe(bestandsnaam: string): string | null {
 }
 
 /**
- * "Bekijken" — opent de PDF in het systeem-standaardprogramma
- * (shell.openPath). Er is in deze app nog geen in-app PDF-viewer (de
- * bestaande pdfjs-dist-integratie leest alleen platte tekst uit PDF's voor
- * de export, ze wordt nergens gerenderd), dus dit sluit het beste aan bij
- * hoe de app PDF's nu al behandelt: als bestand, niet als iets dat ze zelf
- * weergeeft.
+ * "Bekijken" (fallback) — opent de PDF in het systeem-standaardprogramma
+ * via shell.openPath. De primaire "Bekijken"-actie is inmiddels een
+ * in-app lightbox die de PDF zelf rendert (zie getHulpmiddelData hieronder
+ * en renderer/views/hulpmiddel-lightbox.tsx) — dit blijft staan als
+ * uitwijkmogelijkheid wanneer die in-app preview om wat voor reden dan ook
+ * niet lukt (bijv. een beschadigd bestand).
  */
 export async function openHulpmiddel(bestandsnaam: string): Promise<{ success: boolean; error?: string }> {
   const filePath = resolveSafe(bestandsnaam);
@@ -57,6 +57,26 @@ export async function openHulpmiddel(bestandsnaam: string): Promise<{ success: b
     return { success: false, error: result };
   }
   return { success: true };
+}
+
+/**
+ * Levert de ruwe PDF-bytes (base64) aan de renderer, zodat de in-app
+ * lightbox 'm zelf kan renderen met pdfjs-dist (in de renderer, met canvas —
+ * dit is een ander pad dan de bestaande Node-only tekst-extractie in
+ * pdf-export.ts, die geen pagina's rasterized). Alleen het main process
+ * heeft bestandstoegang, dus de bytes moeten hierdoorheen.
+ */
+export async function getHulpmiddelData(bestandsnaam: string): Promise<{ success: boolean; data?: string; error?: string }> {
+  const filePath = resolveSafe(bestandsnaam);
+  if (!filePath) {
+    return { success: false, error: "Bestand niet gevonden." };
+  }
+  try {
+    const buffer = await fs.promises.readFile(filePath);
+    return { success: true, data: buffer.toString("base64") };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 /**

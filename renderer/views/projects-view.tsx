@@ -1,5 +1,4 @@
 import { useLogbookCtx } from "../lib/logbook-context";
-import { PROJ_COLORS } from "../lib/constants";
 import { AppIcon } from "../components/AppIcon";
 import type { Entry, LukEntry } from "../lib/types";
 
@@ -25,7 +24,7 @@ export function ProjectsView() {
         </div>
       ) : (
         <div className="grid-2">
-          {state.projects.map((p, i) => {
+          {state.projects.map((p) => {
             const pe = state.entries.filter((e: Entry) => e.periode === p.id);
             const pl = state.lukEntries.filter((e: LukEntry) => e.periode === p.id);
             const completed = state.completedProjects.includes(p.id);
@@ -38,7 +37,6 @@ export function ProjectsView() {
               >
                 <div className="flex-between" style={{ marginBottom: "8px" }}>
                   <div className="dot-row">
-                    <span className="dot" style={{ width: "10px", height: "10px", background: PROJ_COLORS[i % PROJ_COLORS.length] }} />
                     <span style={{ fontWeight: "var(--fw-bold)", fontSize: "var(--fs-md)" }}>{p.naam}</span>
                   </div>
                   {completed && <span className="chip chip-green" style={{ fontSize: "var(--fs-xs)" }}>Afgerond</span>}

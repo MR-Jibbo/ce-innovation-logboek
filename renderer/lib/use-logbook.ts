@@ -389,6 +389,16 @@ export function useLogbook() {
   }, [state]);
 
   // ─── Hulpmiddelen (statische PDF's) ─────────────────────────────────────
+  // Ruwe bytes (base64) voor de in-app lightbox-preview ("Bekijken").
+  const getHulpmiddelData = useCallback(async (bestandsnaam: string) => {
+    return await window.glazeAPI.glaze.ipc.invoke<{ success: boolean; data?: string; error?: string }>(
+      "hulpmiddelen:getData",
+      bestandsnaam,
+    );
+  }, []);
+
+  // Fallback: opent in het systeem-standaardprogramma (gebruikt wanneer de
+  // in-app preview niet lukt, bijv. een beschadigd bestand).
   const openHulpmiddel = useCallback(async (bestandsnaam: string) => {
     return await window.glazeAPI.glaze.ipc.invoke<{ success: boolean; error?: string }>(
       "hulpmiddelen:open",
@@ -452,6 +462,7 @@ export function useLogbook() {
     resetProject,
     exportPdf,
     exportWord,
+    getHulpmiddelData,
     openHulpmiddel,
     downloadHulpmiddel,
     dataFolder,

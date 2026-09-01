@@ -32,7 +32,6 @@ export function MomentsView() {
             >
               <div className="flex-between" style={{ gap: "10px" }}>
                 <div className="dot-row" style={{ gap: "8px", minWidth: 0 }}>
-                  {skill && <span className="dot" style={{ width: "8px", height: "8px", background: skill.color, flexShrink: 0 }} />}
                   <span style={{ fontWeight: "var(--fw-semibold)", fontSize: "var(--fs-base)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {e.title}
                   </span>

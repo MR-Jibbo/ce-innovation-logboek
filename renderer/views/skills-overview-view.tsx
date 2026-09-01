@@ -20,10 +20,9 @@ export function SkillsOverviewView() {
             onClick={() => ctx.setModal({ type: "skillIndicators", skillId: sk.id })}
           >
             <div className="dot-row" style={{ gap: "7px", marginBottom: "8px" }}>
-              <span className="dot" style={{ width: "8px", height: "8px", background: sk.color }} />
               <span style={{ fontWeight: "var(--fw-semibold)", fontSize: "var(--fs-sm)" }}>{sk.name}</span>
             </div>
-            <div style={{ fontSize: "var(--fs-xl)", fontWeight: "var(--fw-heavy)", color: sk.color, lineHeight: "1" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--fs-xl)", fontWeight: "var(--fw-semibold)", color: sk.color, lineHeight: "1" }}>
               {count}
             </div>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--text-tertiary)", marginTop: "3px", marginBottom: "10px" }}>

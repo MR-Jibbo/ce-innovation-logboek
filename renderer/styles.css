@@ -5,68 +5,129 @@
 @source not "./preload.ts";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CE-Innovation Logboek — Design Token System
+   LEVI — Design Token System (Ilo-designsysteem)
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Zelf-gehost (geen netwerk nodig — de app draait offline): Instrument
+   Serif voor koppen/wordmark, Instrument Sans voor interfacetekst,
+   JetBrains Mono voor data (datums, percentages, tellingen). Alleen de
+   Latin-subset (U+0000-00FF e.a.) is nodig voor Nederlandse tekst. */
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/instrument-serif-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Instrument Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/instrument-sans-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Instrument Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./assets/fonts/instrument-sans-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Instrument Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("./assets/fonts/instrument-sans-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Instrument Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./assets/fonts/instrument-sans-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/jetbrains-mono-400.woff2") format("woff2");
+}
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* ── Accent ── */
-  --pink: #E50056;
-  --pink-hover: #C4004A;
-  --pink-subtle: rgba(229, 0, 86, 0.08);
-  --pink-soft: rgba(229, 0, 86, 0.04);
+  /* ── Merk (LEVI, op het Ilo-designsysteem: salie) ──
+     De custom-property-namen --pink/--pink-hover/enz. zijn historisch (de
+     vorige huisstijl was HAN-rood) en worden zo gelaten omdat de hele app
+     ernaar verwijst — de waarde erachter is nu salie, niet roze. */
+  --pink: #5B8A6B;
+  --pink-hover: #4A7359;
+  --pink-subtle: rgba(91, 138, 107, 0.08);
+  --pink-soft: rgba(91, 138, 107, 0.04);
+
+  /* ── Accent: zonnehoning — spaarzaam, max. één keer per scherm ── */
+  --accent: #EBB255;
+  --accent-hover: #D2963A;
 
   /* ── Text ── */
-  --text-primary: #1a1a1a;
-  --text-secondary: #6b6b6b;
-  --text-tertiary: #9b9b9b;
-  --text-faint: #c0c0c0;
+  --text-primary: #23261F;
+  --text-secondary: #5A5E54;
+  --text-tertiary: #8C8F88;
+  --text-faint: #CFD1C9;
 
   /* ── Surfaces ── */
-  --bg: #f4f4f6;
-  --surface: #ffffff;
-  --surface-subtle: #fafafa;
-  --surface-raised: #ffffff;
+  --bg: #FBFBF9;
+  --surface: #FFFFFF;
+  --surface-subtle: #F4F5F0;
+  --surface-raised: #FFFFFF;
 
   /* ── Borders ── */
-  --border: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.14);
-  --border-faint: rgba(0, 0, 0, 0.05);
+  --border: #E3E4DE;
+  --border-strong: #CFD1C9;
+  --border-faint: #EDEEE8;
 
-  /* ── Sidebar ── */
-  --sidebar-bg: #1a1a1e;
-  --sidebar-bg-grad: linear-gradient(180deg, #1e1e22 0%, #141418 100%);
-  --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-text: rgba(255, 255, 255, 0.55);
-  --sidebar-text-hover: rgba(255, 255, 255, 0.9);
-  --sidebar-text-muted: rgba(255, 255, 255, 0.32);
-  --sidebar-hover: rgba(255, 255, 255, 0.05);
-  --sidebar-active-bg: rgba(229, 0, 86, 0.12);
-  --sidebar-active-border: var(--pink);
+  /* ── Sidebar (blijft donker, ongeacht licht/donker-modus) ── */
+  --sidebar-bg: #1E211C;
+  --sidebar-bg-grad: linear-gradient(180deg, #262A23 0%, #161814 100%);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-text: #B6BAAF;
+  --sidebar-text-hover: #F7F8F3;
+  --sidebar-text-muted: #8C9086;
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-active-bg: #22301F;
 
   /* ── Status colors ── */
-  --status-idea-bg: #f3f4f6;
-  --status-idea-fg: #6b7280;
-  --status-busy-bg: #fef9e7;
-  --status-busy-fg: #a16207;
+  --status-idea-bg: #EDEEE8;
+  --status-idea-fg: #6E7268;
+  --status-busy-bg: #FDF4E2;
+  --status-busy-fg: #A5711F;
+  --status-success-soft: #EAF0EB;
+  --status-success: #4A7359;
 
-  /* ── Warning ── */
-  --warn-bg: #fffbeb;
-  --warn-border: #fcd34d;
-  --warn-fg: #92400e;
+  /* ── Warning (honing) ── */
+  --warn-bg: #FDF4E2;
+  --warn-border: #F2C46B;
+  --warn-fg: #A5711F;
 
-  /* ── Destructive ── */
-  --danger: #e5484d;
-  --danger-hover: #d63a3f;
+  /* ── Destructive (klei) ── */
+  --danger: #B4553F;
+  --danger-hover: #973F2B;
 
   /* ── Typography ──
      --fs-scale is a user-adjustable multiplier (Instellingen → Lettergrootte,
      see renderer/lib/font-size.ts) applied to every --fs-* token below, so
      the whole app's text scales from one slider. Elements that should stay
      a fixed size regardless (e.g. the splash screen) use literal px values
-     instead of these tokens. */
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+     instead of these tokens.
+     --font = Instrument Sans (interfacetekst), --font-display = Instrument
+     Serif (koppen, wordmark, grote getallen), --font-mono = JetBrains Mono
+     (datums, percentages, tellingen — "getallen altijd in mono"). */
+  --font: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --tracking-display: -0.015em;
   --fs-scale: 1;
   --fs-xs: calc(11px * var(--fs-scale));
   --fs-sm: calc(12px * var(--fs-scale));
@@ -83,33 +144,59 @@
   --tracking-wide: 0.08em;
   --tracking-wider: 0.1em;
 
-  /* ── Radius scale ── */
-  --r-xs: 6px;
-  --r-sm: 8px;
-  --r-md: 10px;
+  /* ── Radius scale (Ilo: controls 9px, kaarten 12px, dialogen 16px) ── */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 9px;
   --r-lg: 12px;
   --r-xl: 16px;
-  --r-2xl: 20px;
+  --r-2xl: 22px;
   --r-full: 999px;
 
   /* ── Shadow / elevation ── */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.14), 0 8px 24px rgba(0, 0, 0, 0.08);
-  --shadow-pink: 0 2px 12px rgba(229, 0, 86, 0.08);
+  --shadow-sm: 0 1px 2px rgba(35, 38, 31, 0.06), 0 1px 1px rgba(35, 38, 31, 0.03);
+  --shadow-md: 0 2px 4px rgba(35, 38, 31, 0.05), 0 8px 20px -10px rgba(35, 38, 31, 0.11);
+  --shadow-lg: 0 2px 6px rgba(35, 38, 31, 0.08), 0 14px 34px -12px rgba(35, 38, 31, 0.17);
+  --shadow-xl: 0 4px 10px -2px rgba(35, 38, 31, 0.08), 0 20px 44px -18px rgba(35, 38, 31, 0.15);
+  --shadow-pink: 0 2px 12px rgba(91, 138, 107, 0.1);
+  --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --ring-focus: 0 0 0 3px rgba(91, 138, 107, 0.25);
+
+  /* ── Liquid glass (titelbalk, dialogen, sidebar) ──
+     Vervaagde, licht doorschijnende laag boven de gewone surface-tokens —
+     zie ook --grain-* hieronder, waarvan de blur het korrelige effect
+     zichtbaar zacht maakt op deze vlakken. */
+  --glass-blur: 22px;
+  --glass-saturate: 160%;
+  --glass-topbar-bg: rgba(255, 255, 255, 0.68);
+  --glass-topbar-border: rgba(255, 255, 255, 0.5);
+  /* Panelen en de sidebar staan altijd tegen effen (bijna-)vlakke ondergrond
+     (geen levendige achtergrond om doorheen te laten schijnen), dus de
+     achtergrond blijft bewust bijna dekkend — anders vervaagt de dialoog of
+     sidebar naar een grijzige mix i.p.v. z'n eigen surface-tint te houden.
+     De "glas"-kwaliteit zit in blur + saturate + de lichtrand/schaduw. */
+  --glass-panel-bg: rgba(255, 255, 255, 0.88);
+  --glass-panel-border: rgba(255, 255, 255, 0.7);
+  --glass-sidebar-bg: rgba(24, 27, 22, 0.93);
+  --glass-sidebar-border: rgba(255, 255, 255, 0.07);
+  --glass-shadow: var(--shadow-xl), var(--shadow-inset-top);
+
+  /* ── Grain (alleen op --bg, de onderliggende paginavlak) ──
+     Lichte, fijnkorrelige SVG-noise, per theme getint. Zie body{} hieronder. */
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.137  0 0 0 0 0.149  0 0 0 0 0.122  0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 
   /* ── Stat category colors ── */
-  --stat-orange: #f97316;
-  --stat-purple: #7c3aed;
-  --stat-blue: #0ea5e9;
-  --stat-green: #22c55e;
+  --stat-orange: #D2963A;
+  --stat-purple: #2E4A38;
+  --stat-blue: #4A7359;
+  --stat-green: #5B8A6B;
 
   /* ── Layout ── */
-  --sw: 220px;
+  --sw: 236px;
   --topbar-h: 52px;
   --page-pad: 28px;
   --titlebar-inset: 28px;
+  --section-gap: 32px;
 
   /* ── Motion ── */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -129,36 +216,59 @@
    same effect because theme.ts computes the class from matchMedia itself
    and keeps it in sync with a change listener. */
 :root.dark {
-    --bg: #1c1c1e;
-    --surface: #2a2a2e;
-    --surface-subtle: #242427;
-    --surface-raised: #303034;
-    --text-primary: #f5f5f7;
-    --text-secondary: #a0a0a8;
-    --text-tertiary: #74747c;
-    --text-faint: #4a4a52;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.14);
-    --border-faint: rgba(255, 255, 255, 0.04);
-    --status-idea-bg: #3a3a3e;
-    --status-idea-fg: #a0a0a8;
-    --status-busy-bg: #3a3318;
-    --status-busy-fg: #d4b758;
-    --warn-bg: #3a3018;
-    --warn-border: #6b5418;
-    --warn-fg: #f0c868;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 4px rgba(0, 0, 0, 0.15);
-    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
-    --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.25);
-    --pink-subtle: rgba(229, 0, 86, 0.14);
-    --pink-soft: rgba(229, 0, 86, 0.08);
+    --pink: #7FB18E;
+    --pink-hover: #93C1A0;
+    --pink-subtle: rgba(127, 177, 142, 0.16);
+    --pink-soft: rgba(127, 177, 142, 0.08);
+    --accent: #F2C46B;
+    --accent-hover: #F6D28E;
+
+    --bg: #161814;
+    --surface: #1E211C;
+    --surface-subtle: #101210;
+    --surface-raised: #262A23;
+    --text-primary: #F7F8F3;
+    --text-secondary: #B6BAAF;
+    --text-tertiary: #8C9086;
+    --text-faint: #575D51;
+    --border: #2C3029;
+    --border-strong: #3A3F36;
+    --border-faint: #262A23;
+    --status-idea-bg: #262A23;
+    --status-idea-fg: #B6BAAF;
+    --status-busy-bg: #30260F;
+    --status-busy-fg: #F2C46B;
+    --status-success-soft: #22301F;
+    --status-success: #7FB18E;
+    --warn-bg: #30260F;
+    --warn-border: #A5711F;
+    --warn-fg: #F2C46B;
+    --danger: #D9836B;
+    --danger-hover: #E29D89;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.22);
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.28), 0 8px 20px -10px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.35), 0 14px 34px -12px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 4px 10px -2px rgba(0, 0, 0, 0.35), 0 20px 44px -18px rgba(0, 0, 0, 0.5);
+    --shadow-pink: 0 2px 12px rgba(127, 177, 142, 0.14);
+    --shadow-inset-top: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    --ring-focus: 0 0 0 3px rgba(143, 180, 155, 0.28);
+
+    /* ── Liquid glass — donkere vlakken, iets meer contrast nodig voor leesbaarheid ── */
+    --glass-topbar-bg: rgba(30, 33, 28, 0.7);
+    --glass-topbar-border: rgba(255, 255, 255, 0.08);
+    --glass-panel-bg: rgba(38, 42, 35, 0.92);
+    --glass-panel-border: rgba(255, 255, 255, 0.09);
+    --glass-sidebar-bg: rgba(14, 16, 14, 0.94);
+    --glass-sidebar-border: rgba(255, 255, 255, 0.06);
+
+    /* ── Grain — lichte korrel op donkere ondergrond ── */
+    --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.929  0 0 0 0 0.937  0 0 0 0 0.910  0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 
     /* ── Stat category colors (brighter for dark surfaces) ── */
-    --stat-orange: #fb923c;
-    --stat-purple: #a78bfa;
-    --stat-blue: #38bdf8;
-    --stat-green: #4ade80;
+    --stat-orange: #F2C46B;
+    --stat-purple: #8FB49B;
+    --stat-blue: #7FB18E;
+    --stat-green: #93C1A0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -167,7 +277,12 @@
 
 body {
   font-family: var(--font);
-  background: var(--bg);
+  /* Effen kleurvlak + een nauwelijks merkbare grain-textuur erboven (alleen
+     hier, op --bg — kaarten, dialogen en het glaseffect blijven vlak/scherp).
+     De alpha van de korrel zit al gebakken in --grain-image's feColorMatrix
+     (per theme afgestemd), dus een simpele background-image volstaat. */
+  background-color: var(--bg);
+  background-image: var(--grain-image);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -193,7 +308,12 @@ textarea,
 
 .sidebar {
   width: var(--sw);
-  background: var(--sidebar-bg-grad);
+  /* Liquid glass: vervaagde, licht doorschijnende laag over de gebruikelijke
+     donkere sidebar-gradient, met een subtiele lichtrand rechts. */
+  background: var(--glass-sidebar-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-right: 1px solid var(--glass-sidebar-border);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -232,17 +352,29 @@ textarea,
   border-bottom: 1px solid var(--sidebar-border);
   flex-shrink: 0;
 }
-.sb-brand-title { font-size: var(--fs-md); font-weight: var(--fw-heavy); color: #fff; line-height: 1.2; }
+/* Wordmark-lockup: beeldmerk + "LEVI" in Instrument Serif, afstand tussen
+   merk en tekst ≈ een derde van de merkhoogte. */
+.sb-wordmark { display: flex; align-items: center; gap: 8px; }
+.sb-wordmark-icon { width: 22px; height: 22px; display: block; flex-shrink: 0; }
+.sb-wordmark-text {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--tracking-display);
+  line-height: 1;
+  color: var(--sidebar-text-hover);
+}
 .sb-brand-sub {
   font-size: var(--fs-xs);
-  color: var(--pink);
-  font-weight: var(--fw-bold);
+  color: var(--sidebar-text-muted);
+  font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  margin-top: 3px;
+  margin-top: 4px;
+  margin-left: 30px;
 }
 
-.sb-projects { flex: 1; padding: 10px 0; }
+.sb-projects { flex: 1; padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; }
 
 .sb-year-btn {
   width: 100%;
@@ -277,7 +409,11 @@ textarea,
   text-align: left;
   background: none;
   border: none;
-  padding: 7px 16px 7px 28px;
+  /* Ingezet vlak i.p.v. edge-to-edge, met dezelfde radius als kaarten elders
+     (12px) — geen "gevulde balk" meer voor de actieve status, alleen een
+     getinte, afgeronde achtergrond zoals de rest van de app. */
+  border-radius: var(--r-lg);
+  padding: 8px 12px;
   cursor: pointer;
   color: var(--sidebar-text);
   font-size: var(--fs-base);
@@ -286,7 +422,6 @@ textarea,
   display: flex;
   align-items: center;
   gap: 9px;
-  border-left: 3px solid transparent;
   font-family: inherit;
 }
 /* The icon must never shrink to make room for the label — without this, a
@@ -298,8 +433,7 @@ textarea,
 .sb-btn:hover { background: var(--sidebar-hover); color: var(--sidebar-text-hover); }
 .sb-btn.active {
   background: var(--sidebar-active-bg);
-  color: #fff;
-  border-left-color: var(--sidebar-active-border);
+  color: var(--sidebar-text-hover);
   font-weight: var(--fw-semibold);
 }
 .sb-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
@@ -317,7 +451,7 @@ textarea,
   color: var(--sidebar-text);
   font-size: var(--fs-base);
   padding: 7px 10px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -328,7 +462,7 @@ textarea,
 .sb-settings:hover { background: var(--sidebar-hover); color: var(--sidebar-text-hover); }
 .sb-settings.active {
   background: var(--sidebar-active-bg);
-  color: #fff;
+  color: var(--sidebar-text-hover);
   font-weight: var(--fw-semibold);
 }
 
@@ -373,7 +507,7 @@ textarea,
   transition: background var(--dur-fast) var(--ease-out);
 }
 .sb-update-banner:hover {
-  background: rgba(229, 0, 86, 0.16);
+  background: rgba(91, 138, 107, 0.16);
 }
 .sb-update-banner-title {
   display: flex;
@@ -400,7 +534,7 @@ textarea,
   cursor: pointer;
   color: var(--sidebar-text);
   padding: 8px 10px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   gap: 9px;
@@ -487,8 +621,12 @@ textarea,
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .topbar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  /* Liquid glass titelbalk: vervaagd, licht doorschijnend, met een subtiele
+     lichtrand onderaan i.p.v. een harde vlakke rand. */
+  background: var(--glass-topbar-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-bottom: 1px solid var(--glass-topbar-border);
   padding: 0 var(--page-pad);
   padding-top: var(--titlebar-inset);
   height: calc(var(--topbar-h) + var(--titlebar-inset));
@@ -557,7 +695,14 @@ textarea,
 
 .page { flex: 1; padding: var(--page-pad); overflow-y: auto; }
 
-.page-title { font-size: var(--fs-xl); font-weight: var(--fw-heavy); color: var(--text-primary); margin-bottom: 4px; }
+.page-title {
+  font-family: var(--font-display);
+  font-size: calc(var(--fs-xl) * 1.35);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--tracking-display);
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
 .page-subtitle { font-size: var(--fs-base); color: var(--text-tertiary); margin-bottom: 24px; }
 .section-title { font-size: var(--fs-lg); font-weight: var(--fw-bold); margin-bottom: 14px; }
 
@@ -738,7 +883,7 @@ textarea.input { resize: vertical; line-height: 1.5; }
 }
 .chip-pink { background: var(--pink-subtle); color: var(--pink); }
 .chip-gray { background: var(--surface-subtle); color: var(--text-secondary); }
-.chip-green { background: rgba(34, 197, 94, 0.14); color: #16a34a; }
+.chip-green { background: var(--status-success-soft); color: var(--status-success); }
 .chip-idea { background: var(--status-idea-bg); color: var(--status-idea-fg); }
 .chip-busy { background: var(--status-busy-bg); color: var(--status-busy-fg); }
 
@@ -765,7 +910,12 @@ textarea.input { resize: vertical; line-height: 1.5; }
 .modal-bg {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  /* Lichter dan voorheen: het glaspaneel erboven is al bijna dekkend
+     (zie --glass-panel-bg), een sterke dimming hierachter zou het alsnog
+     grijzig laten aanvoelen in plaats van een frisse, lichte "frosted" ruit. */
+  background: rgba(35, 38, 31, 0.22);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -775,19 +925,52 @@ textarea.input { resize: vertical; line-height: 1.5; }
 }
 
 .modal-box {
-  background: var(--surface);
+  /* Liquid glass paneel: vervaagd + licht doorschijnend, met een lichtrand
+     bovenaan alsof licht van bovenaf op glas valt. */
+  background: var(--glass-panel-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-panel-border);
   border-radius: var(--r-xl);
   width: 100%;
   max-height: 88vh;
   overflow-y: auto;
   padding: 28px;
-  box-shadow: var(--shadow-xl);
+  box-shadow: var(--glass-shadow);
   animation: modal-scale-in var(--dur-mid) var(--ease-out) both;
 }
 
 .modal-sm { max-width: 440px; }
 .modal-md { max-width: 560px; }
 .modal-lg { max-width: 720px; }
+.modal-xl { max-width: 900px; }
+
+/* ─── Hulpmiddel lightbox (in-app PDF-preview, .modal-xl) ─────────────────── */
+.pdf-lightbox-body {
+  max-height: 74vh;
+  overflow-y: auto;
+  background: var(--surface-subtle);
+  border-radius: var(--r-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.pdf-lightbox-page {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--r-xs);
+  box-shadow: var(--shadow-md);
+  background: #fff;
+}
+.pdf-lightbox-status {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--fs-sm);
+}
 
 .modal-header {
   display: flex;
@@ -795,7 +978,12 @@ textarea.input { resize: vertical; line-height: 1.5; }
   justify-content: space-between;
   margin-bottom: 22px;
 }
-.modal-header h2 { font-size: var(--fs-lg); font-weight: var(--fw-bold); }
+.modal-header h2 {
+  font-family: var(--font-display);
+  font-size: calc(var(--fs-xl) * 1.05);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--tracking-display);
+}
 .modal-close {
   background: none;
   border: none;
@@ -874,8 +1062,8 @@ textarea.input { resize: vertical; line-height: 1.5; }
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 14px; }
 .grid-4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 14px; }
-.grid-fixed-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.grid-fixed-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+.grid-fixed-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.grid-fixed-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
 @media (max-width: 900px) {
   .grid-fixed-3 { grid-template-columns: 1fr; }
 }
@@ -916,9 +1104,23 @@ textarea.input { resize: vertical; line-height: 1.5; }
   animation: modal-scale-in var(--dur-slow) var(--ease-out) both;
 }
 .setup-logo { text-align: center; margin-bottom: 26px; }
-.setup-logo h1 { font-size: var(--fs-2xl); font-weight: var(--fw-heavy); color: var(--text-primary); }
-.setup-logo h1 .accent { color: var(--pink); }
-.setup-logo p { font-size: var(--fs-sm); color: var(--pink); font-weight: var(--fw-bold); letter-spacing: var(--tracking-wider); margin-top: 4px; }
+.setup-logo h1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0;
+}
+.setup-logo-icon { width: 36px; height: 36px; display: block; }
+.setup-logo-text {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--tracking-display);
+  color: var(--text-primary);
+  line-height: 1;
+}
+.setup-logo p { font-size: var(--fs-sm); color: var(--text-tertiary); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-wider); margin-top: 8px; text-transform: uppercase; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Warning / disclaimer box
@@ -1105,14 +1307,16 @@ textarea.input { resize: vertical; line-height: 1.5; }
 .splash-tagline .accent { color: #ff6b4a; }
 
 .splash-appname {
-  font-family: "Courier New", Courier, monospace;
-  font-weight: var(--fw-bold);
-  font-size: 34px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-display);
+  font-weight: var(--fw-regular);
+  font-size: 40px;
   color: var(--text-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-display);
 }
-/* HAN rood, uit de officiële huisstijl-kleurkaart. */
-.splash-appname .accent { color: #e50056; }
+.splash-appname-icon { width: 40px; height: 40px; display: block; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Easter egg — vijf keer op "Innovation Logboek" binnen 5 seconden
@@ -1146,8 +1350,8 @@ textarea.input { resize: vertical; line-height: 1.5; }
    een geleidelijk iets opvallendere kleur naarmate het langer stil is.
    ═══════════════════════════════════════════════════════════════════════════ */
 .stale-neutral { color: var(--text-tertiary); }
-.stale-warm { color: #b45309; }
-.stale-hot { color: #c2410c; }
+.stale-warm { color: var(--warn-fg); }
+.stale-hot { color: var(--danger); }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Bevestigingsanimatie bij het loggen van een moment — viert alleen de

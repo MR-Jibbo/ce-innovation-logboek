@@ -1,7 +1,7 @@
 {
   "name": "ce-innovation-logboek",
   "version": "2.7.1",
-  "productName": "CE-Innovation Logboek",
+  "productName": "LEVI",
   "description": "Log skills and learning outcomes",
   "author": "Jibbe Beeftink",
   "private": true,
@@ -27,7 +27,7 @@
     "image-size": "^2.0.2",
     "lucide-react": "^0.542.0",
     "mammoth": "^1.12.1",
-    "pdfjs-dist": "^6.2.108",
+    "pdfjs-dist": "5.4.624",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
@@ -48,7 +48,7 @@
   },
   "build": {
     "appId": "app.jibbe.ce-innovation-logboek",
-    "productName": "CE-Innovation Logboek",
+    "productName": "LEVI",
     "directories": {
       "output": "dist"
     },

@@ -66,7 +66,6 @@ export function ProjectSettingsView() {
               >
                 <div className="flex-between">
                   <div className="dot-row" style={{ gap: "6px" }}>
-                    <span className="dot" style={{ width: "8px", height: "8px", background: sk.color }} />
                     <span style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--fw-semibold)" }}>{sk.name}</span>
                   </div>
                   {sel && <span style={{ color: sk.color }}><AppIcon name="check" size="sm" strokeWidth={2.5} /></span>}

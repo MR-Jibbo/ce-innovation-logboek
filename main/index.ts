@@ -56,7 +56,7 @@ async function createMainWindow() {
   const minWindowHeight = 456;
   const windowWidth = 1000;
   const windowHeight = 700;
-  let windowTitle = "CE-Innovation Logboek";
+  let windowTitle = "LEVI";
 
   try {
     if (fs.existsSync(packageJsonPath)) {

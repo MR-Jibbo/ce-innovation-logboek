@@ -52,7 +52,6 @@ export function ProjectView() {
                   >
                     <div className="flex-between" style={{ marginBottom: "6px" }}>
                       <div className="dot-row" style={{ gap: "9px" }}>
-                        <span className="dot" style={{ width: "10px", height: "10px", background: skill.color }} />
                         <span style={{ fontWeight: "var(--fw-bold)", fontSize: "var(--fs-base)" }}>{skill.name}</span>
                       </div>
                       <div className="flex-center" style={{ gap: "7px" }}>

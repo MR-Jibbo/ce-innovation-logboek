@@ -10,7 +10,7 @@ import { appHandlers } from "./app.js";
 import { logbookStore, type LogbookData } from "../services/logbook-store.js";
 import { exportLogbookPdf, exportLogbookWord, SKILL_DEFS_BACKEND, LUK_DEFS_BACKEND } from "../services/pdf-export.js";
 import { checkForUpdate } from "../services/update-check.js";
-import { openHulpmiddel, downloadHulpmiddel } from "../services/hulpmiddelen-store.js";
+import { openHulpmiddel, downloadHulpmiddel, getHulpmiddelData } from "../services/hulpmiddelen-store.js";
 
 export function registerHandlers(): void {
   ipcMain.handle("app:getInfo", async (_event) => {
@@ -72,8 +72,13 @@ export function registerHandlers(): void {
   });
 
   // ─── Hulpmiddelen (statische PDF's, meegebouwd via extraResources) ──────
-  // "Bekijken": opent in het systeem-standaardprogramma (shell.openPath) —
-  // zie hulpmiddelen-store.ts voor de afweging t.o.v. een in-app viewer.
+  // "Bekijken": levert de ruwe bytes zodat de renderer een in-app lightbox
+  // kan tonen (zie hulpmiddel-lightbox.tsx). "hulpmiddelen:open" blijft
+  // bestaan als fallback naar het systeem-standaardprogramma.
+  ipcMain.handle("hulpmiddelen:getData", async (_event, bestandsnaam: string) => {
+    return await getHulpmiddelData(bestandsnaam);
+  });
+
   ipcMain.handle("hulpmiddelen:open", async (_event, bestandsnaam: string) => {
     return await openHulpmiddel(bestandsnaam);
   });
