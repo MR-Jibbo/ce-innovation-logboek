@@ -19,8 +19,8 @@ export function SkillsOverviewView() {
             className="card-sm clickable-card"
             onClick={() => ctx.setModal({ type: "skillIndicators", skillId: sk.id })}
           >
-            <div className="dot-row" style={{ gap: "7px", marginBottom: "8px" }}>
-              <span style={{ fontWeight: "var(--fw-semibold)", fontSize: "var(--fs-sm)" }}>{sk.name}</span>
+            <div className="dot-row" style={{ gap: "7px", marginBottom: "8px", minWidth: 0 }}>
+              <span style={{ fontWeight: "var(--fw-semibold)", fontSize: "var(--fs-sm)", overflowWrap: "break-word", wordBreak: "break-word", minWidth: 0 }}>{sk.name}</span>
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--fs-xl)", fontWeight: "var(--fw-semibold)", color: "var(--pink)", lineHeight: "1" }}>
               {count}

@@ -56,17 +56,22 @@
   --accent: #EBB255;
   --accent-hover: #D2963A;
 
-  /* ── Lava-achtergrond (zie .lava-bg hieronder) — in licht thema heel
-     ingehouden (multiply, lage opacity) zodat het decoratie blijft en geen
-     concurrentie met de tekst wordt. ── */
-  --lava-opacity: 0.16;
+  /* ── Lava-achtergrond (zie .lava-bg hieronder) — in licht thema ingehouden
+     (multiply) zodat het decoratie blijft en geen concurrentie met de tekst
+     wordt, maar wel duidelijk zichtbaar (was 0.16, nauwelijks te zien). ── */
+  --lava-opacity: 0.34;
   --lava-blend: multiply;
 
-  /* ── Text ── */
+  /* ── Text ──
+     --text-tertiary iets donkerder dan voorheen (#8C8F88 → #6B6E64) voor
+     voldoende contrast op tegels (was ~3.3:1 tegen witte kaarten, nu >5:1).
+     --text-faint wordt op een paar plekken ook voor leesbare tekst gebruikt
+     (bijv. "X uur geleden", "+2 meer") — was daar vrijwel onleesbaar
+     (~1.5:1 tegen wit), nu rond 3.4:1. */
   --text-primary: #23261F;
   --text-secondary: #5A5E54;
-  --text-tertiary: #8C8F88;
-  --text-faint: #CFD1C9;
+  --text-tertiary: #6B6E64;
+  --text-faint: #8A8D82;
 
   /* ── Surfaces ── */
   --bg: #FBFBF9;
@@ -112,21 +117,25 @@
      the whole app's text scales from one slider. Elements that should stay
      a fixed size regardless (e.g. the splash screen) use literal px values
      instead of these tokens.
-     --font is Courier New overal in de app (zelf meegeleverd, zie de
-     @font-face's hierboven); --font-display/--font-mono wijzen ernaar
-     zodat koppen en data-tekst er hetzelfde uitzien als de rest. */
-  --font: "Courier New", "Courier", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+     --font is Arial overal in de app, behalve het "LEVI"-woordmerk zelf
+     (dat blijft --font-brand: Courier New, zelf meegeleverd via de
+     @font-face's hierboven).
+     De basiswaarden hieronder zijn al met 1.25 vermenigvuldigd t.o.v. de
+     oorspronkelijke maten, zodat de standaardstand van de Lettergrootte-
+     slider (100%, --fs-scale: 1) overeenkomt met wat voorheen 125% was. */
+  --font: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --font-brand: "Courier New", "Courier", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --font-display: var(--font);
   --font-mono: var(--font);
   --tracking-display: normal;
   --fs-scale: 1;
-  --fs-xs: calc(11px * var(--fs-scale));
-  --fs-sm: calc(12px * var(--fs-scale));
-  --fs-base: calc(13px * var(--fs-scale));
-  --fs-md: calc(15px * var(--fs-scale));
-  --fs-lg: calc(17px * var(--fs-scale));
-  --fs-xl: calc(22px * var(--fs-scale));
-  --fs-2xl: calc(28px * var(--fs-scale));
+  --fs-xs: calc(13.75px * var(--fs-scale));
+  --fs-sm: calc(15px * var(--fs-scale));
+  --fs-base: calc(16.25px * var(--fs-scale));
+  --fs-md: calc(18.75px * var(--fs-scale));
+  --fs-lg: calc(21.25px * var(--fs-scale));
+  --fs-xl: calc(27.5px * var(--fs-scale));
+  --fs-2xl: calc(35px * var(--fs-scale));
   --fw-regular: 400;
   --fw-medium: 500;
   --fw-semibold: 600;
@@ -228,8 +237,13 @@
     --surface-raised: #383E30;
     --text-primary: #F7F8F3;
     --text-secondary: #B6BAAF;
-    --text-tertiary: #8C9086;
-    --text-faint: #575D51;
+    /* Iets lichter dan voorheen (#8C9086 → #A0A498) — na het lichter maken
+       van --surface hierboven zakte het contrast van dit label-grijs onder
+       de 4.5:1-richtlijn; dit brengt het weer boven de 5:1. */
+    --text-tertiary: #A0A498;
+    /* Was #575D51 (~1.9:1 tegen de tegelkleur — de "9 uur geleden"-tekst op
+       de dashboard-tegels was nauwelijks te lezen), nu rond 3.3:1. */
+    --text-faint: #7D8175;
     --border: #40473A;
     --border-strong: #525A46;
     --border-faint: #262A23;
@@ -356,7 +370,9 @@ textarea,
 .sb-wordmark { display: flex; align-items: center; gap: 8px; }
 .sb-wordmark-icon { width: 22px; height: 22px; display: block; flex-shrink: 0; }
 .sb-wordmark-text {
-  font-family: var(--font-display);
+  /* Het "LEVI"-woordmerk blijft in het merklettertype (Courier New), ook
+     nu de rest van de app op Arial staat. */
+  font-family: var(--font-brand);
   font-size: 22px;
   font-weight: var(--fw-regular);
   letter-spacing: var(--tracking-display);
@@ -1260,7 +1276,8 @@ textarea.input { resize: vertical; line-height: 1.5; }
 }
 .setup-logo-icon { width: 36px; height: 36px; display: block; }
 .setup-logo-text {
-  font-family: var(--font-display);
+  /* "LEVI" blijft in het merklettertype, zie .sb-wordmark-text hierboven. */
+  font-family: var(--font-brand);
   font-size: 36px;
   font-weight: var(--fw-regular);
   letter-spacing: var(--tracking-display);
@@ -1447,7 +1464,7 @@ textarea.input { resize: vertical; line-height: 1.5; }
 /* Fixed px, deliberately NOT var(--fs-*) — the splash screen stays the same
    size regardless of the Instellingen → Lettergrootte setting. */
 .splash-tagline {
-  font-family: "Courier New", Courier, monospace;
+  font-family: var(--font);
   font-size: 18px;
   color: var(--text-secondary);
 }
@@ -1457,7 +1474,8 @@ textarea.input { resize: vertical; line-height: 1.5; }
   display: flex;
   align-items: center;
   gap: 14px;
-  font-family: var(--font-display);
+  /* "LEVI" blijft in het merklettertype, zie .sb-wordmark-text hierboven. */
+  font-family: var(--font-brand);
   font-weight: var(--fw-regular);
   font-size: 40px;
   color: var(--text-primary);
