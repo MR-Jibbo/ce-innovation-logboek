@@ -863,6 +863,9 @@ textarea,
 .btn-ghost {
   background: var(--surface);
   border: 1px solid var(--border);
+  /* Ontbrak hier — .btn-ghost viel terug op de scherpe standaard-hoeken van
+     de browser, wat naast .btn (afgeronde --r-sm) onafgewerkt oogde. */
+  border-radius: var(--r-sm);
   color: var(--text-secondary);
   padding: 8px 14px;
   font-size: var(--fs-sm);
@@ -1379,10 +1382,14 @@ textarea.input { resize: vertical; line-height: 1.5; }
    Scrollbar
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Onzichtbaar totdat je het scrollbare vlak zelf hovert (zoals macOS'
+   eigen "toon scrollbalken tijdens scrollen"-gedrag) — voorkomt de altijd
+   zichtbare, opvallende balk die er los van de rest van de app uitzag. */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--r-full); }
-::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: var(--r-full); }
+*:hover::-webkit-scrollbar-thumb { background: var(--border-strong); }
+*:hover::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Animations

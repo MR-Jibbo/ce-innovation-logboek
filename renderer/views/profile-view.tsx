@@ -56,7 +56,7 @@ export function ProfileView() {
   };
 
   return (
-    <div className="animate-fade-in" style={{ maxWidth: "860px" }}>
+    <div className="animate-fade-in">
       {/* Naam — wijzigingen worden automatisch opgeslagen */}
       <div className="card" style={{ marginBottom: "18px" }}>
         <h2 className="section-title" style={{ fontSize: "var(--fs-md)", marginBottom: "12px" }}>Naam</h2>
